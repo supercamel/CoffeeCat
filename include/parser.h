@@ -71,6 +71,9 @@ public:
 
     void parse_indent(int expect);
 
+    void parse_binary_expression(shared_ptr<NExpression>& e,
+                                    vector<BINARY_OPERATOR> ops,
+                                    vector<string> toks, int precedence);
     void check_precedence(shared_ptr<NExpression>& e);
 
     bool variable_is_atomic(string var);

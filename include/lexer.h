@@ -50,7 +50,7 @@ public:
     Lexer(string& code);
     virtual ~Lexer();
 
-    Token lex(bool peeking = false);
+    Token lex(bool peeking = false, int peek_ahead = 0);
 private:
     inline char curc() { return text[text_pos]; }
     Token get_token();

@@ -15,12 +15,14 @@ Lexer::~Lexer()
     //dtor
 }
 
-Token Lexer::lex(bool peeking)
+Token Lexer::lex(bool peeking, int peak_ahead)
 {
     Token t;
     if(peeking)
     {
         Lexer backup = *this;
+        for(int i = 0; i < peak_ahead; i++)
+            t = get_token();
         t = get_token();
         *this = backup;
     }
