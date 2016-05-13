@@ -55,6 +55,30 @@ void Printer::Visit(NBinaryOperator* bo)
     case BO_INCLUSIVE_OR:
         cout << "INCLUSIVE OR" << endl;
         break;
+    case BO_EXCLUSIVE_OR:
+        cout << "EXCLUSIVE OR" << endl;
+        break;
+    case BO_BITWISE_AND:
+        cout << "BITWISE AND" << endl;
+        break;
+    case BO_EQUAL:
+        cout << "EQUAL" << endl;
+        break;
+    case BO_NOT_EQUAL:
+        cout << "NOT EQUAL" << endl;
+        break;
+    case BO_LESS_THAN_EQUAL:
+        cout << "LESS THAN EQUAL" << endl;
+        break;
+    case BO_GREATER_THAN_EQUAL:
+        cout << "GREATER THAN EQUAL" << endl;
+        break;
+    case BO_LESS_THAN:
+        cout << "LESS THAN" << endl;
+        break;
+    case BO_GREATER_THAN:
+        cout << "GREATER THAN" << endl;
+        break;
     }
 
     block_depth++;
@@ -72,6 +96,12 @@ void Printer::Visit(NUnaryOperator* bo)
     case UO_NEGATE:
         cout << "NEGATE" << endl;
     break;
+    case UO_NOT:
+        cout << "LOGICAL NOT" << endl;
+        break;
+    case UO_BITWISE_NOT:
+        cout << "BITWISE NOT" << endl;
+        break;
     };
 
     block_depth++;
@@ -168,6 +198,81 @@ void Printer::Visit(NMethod* m)
     m->block.Accept(this);
     block_depth--;
 }
+
+void Printer::Visit(NBrackets* b)
+{
+    print_block();
+    cout << "Brackets" << endl;
+    block_depth++;
+    (*b->subexpr.begin())->Accept(this);
+    block_depth--;
+}
+
+void Printer::Visit(NBoolLiteral* b)
+{
+    print_block();
+    if(b->value)
+        cout << "true";
+    else
+        cout << "false";
+    cout << endl;
+}
+
+void Printer::Visit(NIfElse* ie)
+{
+    print_block();
+    cout << "If Statement" << endl;
+
+    block_depth++;
+    print_block();
+    cout << "Condition" << endl;
+    block_depth++;
+    ie->condition->Accept(this);
+    block_depth--;
+    ie->block_if->Accept(this);
+    block_depth--;
+
+    if(ie->block_else)
+    {
+        print_block();
+        cout << "Else" << endl;
+        block_depth++;
+        ie->block_else->Accept(this);
+        block_depth--;
+    }
+    print_block();
+    cout << "End If" << endl;
+}
+
+void Printer::Visit(NReturn* r)
+{
+    print_block();
+    cout << "Return " << endl;
+
+    if(r->expr)
+    {
+        block_depth++;
+        r->expr->Accept(this);
+        block_depth--;
+    }
+}
+
+void Printer::Visit(NWhile* w)
+{
+    print_block();
+    cout << "While" << endl;
+    block_depth++;
+    w->condition->Accept(this);
+    w->block->Accept(this);
+    block_depth--;
+}
+
+void Printer::Visit(NControl* c)
+{
+    print_block();
+    cout << c->keyword << endl;
+}
+
 void Printer::print_block()
 {
     for(int i = 0; i < block_depth; i++)

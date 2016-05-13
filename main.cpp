@@ -22,6 +22,10 @@ int main(int argc, char *argv[])
 
             NBlock head;
             Parser parser(lexer);
+/*
+            auto e = make_shared<NExpression>();
+            parser.parse_expression(e);
+*/
             parser.parse(head);
 
 /*
@@ -29,6 +33,7 @@ int main(int argc, char *argv[])
             parser.parse_block_item(head);
             //head.items.push_back(el);
 */
+
             Printer printer;
             head.Accept(&printer);
 
@@ -44,7 +49,6 @@ int main(int argc, char *argv[])
             ofstream sout("out/" + base_fname+".cpp");
             sout << gen.source;
             sout.close();
-
         }
         catch(LexerError le)
         {

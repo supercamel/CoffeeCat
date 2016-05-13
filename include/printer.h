@@ -21,6 +21,12 @@ public:
     void Visit(NVariableDeclaration* v);
     void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
+    void Visit(NBrackets* b);
+    void Visit(NIfElse* ie);
+    void Visit(NBoolLiteral* b);
+    void Visit(NReturn* r);
+    void Visit(NWhile* w);
+    void Visit(NControl* c);
 
 private:
     void print_block();

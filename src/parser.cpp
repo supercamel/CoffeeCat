@@ -52,15 +52,12 @@ void Parser::parse_top_level(NBlock& block)
 void Parser::parse_method(shared_ptr<NMethod>& m)
 {
     auto tok = lexer.lex();
-    if(tok.tok != "def")
-        throw(backtrack());
-    tok = lexer.lex();
     if(tok.tok != "identifier")
-        throw(ParseError(tok, "Expected identifier"));
+        throw(backtrack());
     m->return_type = tok.raw;
     tok = lexer.lex();
     if(tok.tok != "identifier")
-        throw(ParseError(tok, "Expected method name"));
+        throw(backtrack());
     m->foo_name = tok.raw;
     try
     {
@@ -75,12 +72,9 @@ void Parser::parse_method(shared_ptr<NMethod>& m)
     tok = lexer.lex();
     if(tok.tok != ":")
         throw(ParseError(tok, "Expected ':'"));
-    parse_indent(1);
-    while(indent >= 1)
-    {
-        parse_block_item(m->block);
-        parse_indent(0);
-    }
+
+    parse_block(m->block);
+    parse_indent(0);
 }
 
 void Parser::parse_argument_list(shared_ptr<NArgumentList>& l)
@@ -131,23 +125,44 @@ void Parser::parse_parameter_declaration(shared_ptr<NParameterDeclaration>& d)
     d->handle = tok.raw;
 }
 
+void Parser::parse_block(NBlock& block)
+{
+    indent++;
+
+    parse_indent(indent);
+    while(true)
+    {
+        parse_block_item(block);
+        Lexer l = lexer;
+        int i = parse_indent(0);
+        if(i < indent)
+        {
+            lexer = l;
+            indent--;
+            return;
+        }
+    }
+}
+
+int Parser::parse_indent(int expect)
+{
+    int i = 0;
+    while((lexer.lex(true).tok == "indent") || (lexer.lex(true).tok == "newline"))
+    {
+        i++;
+        auto tok = lexer.lex();
+        if(tok.tok == "newline")
+            i = 0;
+    }
+    if(i < expect)
+        throw(IndentError(lexer.lex()));
+
+    return i;
+}
+
 void Parser::parse_block_item(NBlock& block)
 {
     Lexer l = lexer;
-    try
-    {
-        auto e = make_shared<NExpression>();
-        parse_expression(e);
-        auto tok = lexer.lex();
-        if(tok.tok != "newline")
-            throw(ParseError(tok, "Expected newline after expression"));
-        block.items.push_back(e);
-        return;
-    }
-    catch(backtrack bte)
-    {
-        lexer = l;
-    }
     try
     {
         parse_declaration(block);
@@ -160,6 +175,29 @@ void Parser::parse_block_item(NBlock& block)
     {
         lexer = l;
     }
+
+    try
+    {
+        auto ie = make_shared<NIfElse>();
+        parse_if_else_statement(ie);
+        block.items.push_back(ie);
+        return;
+    }
+    catch(backtrack bt)
+    {
+        lexer = l;
+    }
+
+    try
+    {
+        auto r = make_shared<NReturn>();
+        parse_return_statement(r);
+        block.items.push_back(r);
+        return;
+    }
+    catch(backtrack bt)
+    { lexer = l; }
+
     try
     {
         auto e = make_shared<NExtern>();
@@ -171,9 +209,203 @@ void Parser::parse_block_item(NBlock& block)
         return;
     }
     catch(backtrack bte)
+    { lexer = l; }
+
+    try
+    {
+        auto e = make_shared<NWhile>();
+        parse_while_statement(e);
+        block.items.push_back(e);
+        return;
+    }
+    catch(backtrack bte)
+    { lexer = l; }
+
+
+    try
+    {
+        auto e = make_shared<NFor>();
+        parse_for_statement(e);
+        block.items.push_back(e);
+        return;
+    }
+    catch(backtrack bte)
+    { lexer = l; }
+
+    try
+    {
+        auto c = make_shared<NControl>();
+        parse_control_statement(c);
+        block.items.push_back(c);
+        return;
+    }
+    catch(backtrack bte)
+    { lexer = l; }
+
+    try
+    {
+        auto e = make_shared<NExpression>();
+        parse_expression(e);
+        auto tok = lexer.lex();
+        if(tok.tok != "newline")
+            throw(ParseError(tok, "Expected newline after expression"));
+        block.items.push_back(e);
+        return;
+    }
+    catch(backtrack bte)
+    { lexer = l; }
+
+    auto tok = lexer.lex();
+    throw ParseError(tok, "Did not expect " + tok.raw);
+}
+
+void Parser::parse_if_else_statement(shared_ptr<NIfElse>& ie)
+{
+    if(lexer.lex(true).tok != "if")
+        throw(backtrack());
+    lexer.lex();
+    try
+    {
+        parse_expression(ie->condition);
+    }
+    catch(backtrack bt)
+    {
+        throw(ParseError(lexer.lex(), "Expected expression after if statement"));
+    }
+    if(lexer.lex().tok != ":")
+        throw(ParseError(lexer.lex(), "Expected : after if expression"));
+
+    ie->block_if = make_shared<NBlock>();
+
+    parse_block(*ie->block_if);
+
+    Lexer l = lexer;
+    int i = parse_indent(0);
+
+    if(lexer.lex(true).tok == "else")
+    {
+        if(i != indent)
+            throw(IndentError(lexer.lex()));
+
+        ie->block_else = make_shared<NBlock>();
+        lexer.lex();
+        auto t = lexer.lex(true);
+        if(t.tok == ":")
+        {
+            lexer.lex();
+            parse_block(*ie->block_else);
+            return;
+        }
+        else if(t.tok == "if")
+        {
+            auto sie = make_shared<NIfElse>();
+            parse_if_else_statement(sie);
+            ie->block_else->items.push_back(sie);
+            return;
+        }
+        else
+        {
+            throw(ParseError(t, "Expected either : or if after else statement"));
+        }
+    }
+    lexer = l;
+}
+
+void Parser::parse_return_statement(shared_ptr<NReturn>& r)
+{
+    if(lexer.lex(true).tok != "return")
+        throw(backtrack());
+
+    lexer.lex();
+
+    try
+    {
+        auto e = make_shared<NExpression>();
+        parse_expression(e);
+        r->expr = e;
+    }
+    catch(backtrack bt)
+    { }
+}
+
+void Parser::parse_while_statement(shared_ptr<NWhile>& w)
+{
+    if(lexer.lex(true).tok != "while")
+        throw(backtrack());
+    lexer.lex();
+
+    try
+    {
+        auto e = make_shared<NExpression>();
+        parse_expression(e);
+        w->condition = e;
+    }
+    catch(backtrack bt)
+    {
+        throw(ParseError(lexer.lex(), "Expected expression after while statement"));
+    }
+    if(lexer.lex().tok != ":")
+        throw(ParseError(lexer.lex(), "Expected : after while condition"));
+
+    w->block = make_shared<NBlock>();
+    parse_block(*w->block);
+}
+
+
+void Parser::parse_for_statement(shared_ptr<NFor>& f)
+{
+    if(lexer.lex(true).tok != "for")
+        throw(backtrack());
+    lexer.lex();
+    auto tok = lexer.lex();
+    if(tok.tok != "identifier")
+        throw(ParseError(lexer.lex(), "Expected identifier after for statement"));
+    f->lhs = make_shared<NIdentifier>();
+    f->lhs->ident = tok.raw;
+
+    tok = lexer.lex();
+    if(tok.tok != "in")
+        throw(ParseError(tok, "Expected 'in' keyword after identifier"));
+
+    Lexer l = lexer;
+    try
+    {
+        auto n = make_shared<NMethodCall>();
+        parse_method_call(n);
+        f->rhs = static_pointer_cast<NExpression>(n);
+    }
+    catch(backtrack bt)
     {
         lexer = l;
+        try
+        {
+            auto i = make_shared<NIdentifier>();
+            parse_identifier(i);
+            f->rhs = static_pointer_cast<NExpression>(i);
+        }
+        catch(backtrack bt)
+        { throw ParseError(lexer.lex(), "Expected a method call or an identifier after 'in'"); }
     }
+    if(lexer.lex().tok != ":")
+        throw ParseError(lexer.lex(), "Expected ':'");
+
+    f->block = make_shared<NBlock>();
+    parse_block(*f->block);
+}
+
+void Parser::parse_control_statement(shared_ptr<NControl>& c)
+{
+    auto tok = lexer.lex();
+    if(tok.tok == "continue")
+        c->keyword = "continue";
+    else if(tok.tok == "break")
+        c->keyword = "break";
+    else
+        throw(backtrack());
+
+    tok = lexer.lex();
+    if(tok.tok != "newline")
+        throw(ParseError(lexer.lex(), "Expected new line after control statement"));
 }
 
 void Parser::parse_declaration(NBlock& block)
@@ -308,8 +540,9 @@ void Parser::parse_assignment_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        parse_binary_expression(e, {BO_ASSIGN}, {"="}, 1);
-        cout << "parsed assignment OK" << endl;
+        parse_binary_expression(e, {BO_ASSIGN}, {"="}, 1,
+                                [&](shared_ptr<NExpression>& e) { parse_assignment_expression(e);},
+                                [&](shared_ptr<NExpression>& e) { parse_logical_or_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -332,7 +565,9 @@ void Parser::parse_logical_or_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        parse_binary_expression(e, {BO_LOGICAL_OR}, {"or"}, 2);
+        parse_binary_expression(e, {BO_LOGICAL_OR}, {"or"}, 2,
+                [&](shared_ptr<NExpression>& e) { parse_logical_or_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_logical_and_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -355,34 +590,9 @@ void Parser::parse_logical_and_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        auto tok = lexer.lex(true);
-        int count = 0;
-        while(tok.tok != "and")
-        {
-            if(tok.tok == "newline")
-                throw(backtrack());
-            if(tok.tok == "eof")
-                throw(backtrack());
-            tok = lexer.lex(true, count++);
-        }
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        parse_inclusive_or_expression(lhs);
-        auto t = lexer.lex();
-        BINARY_OPERATOR op;
-        if(t.tok == "and")
-            op = BO_LOGICAL_AND;
-        else
-            throw(backtrack());
-        shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_logical_and_expression(rhs);
-        auto bino = make_shared<NBinaryOperator>();
-        bino->subexpr.push_back(lhs);
-        bino->subexpr.push_back(rhs);
-        bino->op = op;
-        bino->precedence = 3;
-        shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
-        check_precedence(tino);
-        e = tino;
+        parse_binary_expression(e, {BO_LOGICAL_AND}, {"and"}, 3,
+                [&](shared_ptr<NExpression>& e) { parse_logical_and_expression(e);} ,
+                [&](shared_ptr<NExpression>& e) { parse_inclusive_or_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -405,34 +615,111 @@ void Parser::parse_inclusive_or_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        auto tok = lexer.lex(true);
-        int count = 0;
-        while(tok.tok != "|")
-        {
-            if(tok.tok == "newline")
-                throw(backtrack());
-            if(tok.tok == "eof")
-                throw(backtrack());
-            tok = lexer.lex(true, count++);
-        }
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        parse_shift_expression(lhs);
-        auto t = lexer.lex();
-        BINARY_OPERATOR op;
-        if(t.tok == "|")
-            op = BO_INCLUSIVE_OR;
-        else
-            throw(backtrack());
-        shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_inclusive_or_expression(rhs);
-        auto bino = make_shared<NBinaryOperator>();
-        bino->subexpr.push_back(lhs);
-        bino->subexpr.push_back(rhs);
-        bino->op = op;
-        bino->precedence = 4;
-        shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
-        check_precedence(tino);
-        e = tino;
+        parse_binary_expression(e, {BO_INCLUSIVE_OR}, {"|"}, 4,
+                [&](shared_ptr<NExpression>& e) { parse_inclusive_or_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_exclusive_or_expression(e);} );
+        return;
+    }
+    catch(backtrack btw)
+    {
+        lexer = l;
+    }
+    try
+    {
+        return parse_exclusive_or_expression(e);
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+    throw(backtrack());
+}
+
+void Parser::parse_exclusive_or_expression(shared_ptr<NExpression>& e)
+{
+    Lexer l = lexer;
+    try
+    {
+        parse_binary_expression(e, {BO_EXCLUSIVE_OR}, {"^"}, 5,
+                [&](shared_ptr<NExpression>& e) { parse_exclusive_or_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_bitwise_and_expression(e);} );
+        return;
+    }
+    catch(backtrack btw)
+    {
+        lexer = l;
+    }
+    try
+    {
+        return parse_bitwise_and_expression(e);
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+    throw(backtrack());
+}
+
+void Parser::parse_bitwise_and_expression(shared_ptr<NExpression>& e)
+{
+    Lexer l = lexer;
+    try
+    {
+        parse_binary_expression(e, {BO_BITWISE_AND}, {"&"}, 6,
+                [&](shared_ptr<NExpression>& e) { parse_bitwise_and_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_equality_expression(e);} );
+        return;
+    }
+    catch(backtrack btw)
+    {
+        lexer = l;
+    }
+    try
+    {
+        return parse_equality_expression(e);
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+    throw(backtrack());
+}
+
+void Parser::parse_equality_expression(shared_ptr<NExpression>& e)
+{
+    Lexer l = lexer;
+    try
+    {
+        parse_binary_expression(e, {BO_EQUAL, BO_NOT_EQUAL}, {"==", "!="}, 7,
+                [&](shared_ptr<NExpression>& e) { parse_equality_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_relational_expression(e);} );
+        return;
+    }
+    catch(backtrack btw)
+    {
+        lexer = l;
+    }
+    try
+    {
+        return parse_relational_expression(e);
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+    throw(backtrack());
+}
+
+void Parser::parse_relational_expression(shared_ptr<NExpression>& e)
+{
+    Lexer l = lexer;
+    try
+    {
+        parse_binary_expression(e, {BO_LESS_THAN_EQUAL, BO_GREATER_THAN_EQUAL,
+                                    BO_LESS_THAN, BO_GREATER_THAN},
+                                    {"<=", ">=", "<", ">"}, 8,
+                [&](shared_ptr<NExpression>& e) { parse_relational_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_shift_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -450,41 +737,14 @@ void Parser::parse_inclusive_or_expression(shared_ptr<NExpression>& e)
     throw(backtrack());
 }
 
-void Parser::parse_shift_expression(shared_ptr<NExpression>& chomp)
+void Parser::parse_shift_expression(shared_ptr<NExpression>& e)
 {
     Lexer l = lexer;
     try
     {
-        auto tok = lexer.lex(true);
-        int count = 0;
-        while((tok.tok != "<<") && (tok.tok != ">>"))
-        {
-            if(tok.tok == "newline")
-                throw(backtrack());
-            if(tok.tok == "eof")
-                throw(backtrack());
-            tok = lexer.lex(true, count++);
-        }
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        parse_additive_expression(lhs);
-        auto t = lexer.lex();
-        BINARY_OPERATOR op;
-        if(t.tok == "<<")
-            op = BO_LEFT_SHIFT;
-        else if(t.tok == ">>")
-            op = BO_RIGHT_SHIFT;
-        else
-            throw(backtrack());
-        shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_shift_expression(rhs);
-        auto bino = make_shared<NBinaryOperator>();
-        bino->subexpr.push_back(lhs);
-        bino->subexpr.push_back(rhs);
-        bino->op = op;
-        bino->precedence = 9;
-        shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
-        check_precedence(tino);
-        chomp = tino;
+        parse_binary_expression(e, {BO_LEFT_SHIFT, BO_RIGHT_SHIFT}, {"<<", ">>"}, 9,
+                [&](shared_ptr<NExpression>& e) { parse_shift_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_additive_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -493,7 +753,7 @@ void Parser::parse_shift_expression(shared_ptr<NExpression>& chomp)
     }
     try
     {
-        return parse_additive_expression(chomp);
+        return parse_additive_expression(e);
     }
     catch(backtrack bte)
     {
@@ -502,41 +762,14 @@ void Parser::parse_shift_expression(shared_ptr<NExpression>& chomp)
     throw(backtrack());
 }
 
-void Parser::parse_additive_expression(shared_ptr<NExpression>& bo)
+void Parser::parse_additive_expression(shared_ptr<NExpression>& e)
 {
     Lexer l = lexer;
     try
     {
-        auto tok = lexer.lex(true);
-        int count = 0;
-        while((tok.tok != "+") && (tok.tok != "-"))
-        {
-            if(tok.tok == "newline")
-                throw(backtrack());
-            if(tok.tok == "eof")
-                throw(backtrack());
-            tok = lexer.lex(true, ++count);
-        }
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        parse_multiplicative_expression(lhs);
-        auto t = lexer.lex();
-        BINARY_OPERATOR op;
-        if(t.tok == "+")
-            op = BO_ADD;
-        else if(t.tok == "-")
-            op = BO_SUBTRACT;
-        else
-            throw(backtrack());
-        shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_additive_expression(rhs);
-        auto bino = make_shared<NBinaryOperator>();
-        bino->subexpr.push_back(lhs);
-        bino->subexpr.push_back(rhs);
-        bino->op = op;
-        bino->precedence = 10;
-        shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
-        check_precedence(tino);
-        bo = tino;
+        parse_binary_expression(e, {BO_ADD, BO_SUBTRACT}, {"+", "-"}, 10,
+                [&](shared_ptr<NExpression>& e) { parse_additive_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_multiplicative_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -545,7 +778,7 @@ void Parser::parse_additive_expression(shared_ptr<NExpression>& bo)
     }
     try
     {
-        return parse_multiplicative_expression(bo);
+        return parse_multiplicative_expression(e);
     }
     catch(backtrack bte)
     {
@@ -555,41 +788,14 @@ void Parser::parse_additive_expression(shared_ptr<NExpression>& bo)
 }
 
 
-void Parser::parse_multiplicative_expression(shared_ptr<NExpression>& bo)
+void Parser::parse_multiplicative_expression(shared_ptr<NExpression>& e)
 {
     Lexer l = lexer;
     try
     {
-        auto tok = lexer.lex(true);
-        int count = 0;
-        while((tok.tok != "*") && (tok.tok != "/"))
-        {
-            if(tok.tok == "newline")
-                throw(backtrack());
-            if(tok.tok == "eof")
-                throw(backtrack());
-            tok = lexer.lex(true, count++);
-        }
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        parse_unary_expression(lhs);
-        auto t = lexer.lex();
-        BINARY_OPERATOR op;
-        if(t.tok == "*")
-            op = BO_MULTIPLY;
-        else if(t.tok == "/")
-            op = BO_DIVIDE;
-        else
-            throw(backtrack());
-        shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_multiplicative_expression(rhs);
-        auto bino = make_shared<NBinaryOperator>();
-        bino->subexpr.push_back(lhs);
-        bino->subexpr.push_back(rhs);
-        bino->op = op;
-        bino->precedence = 20;
-        shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
-        check_precedence(tino);
-        bo = tino;
+        parse_binary_expression(e, {BO_MULTIPLY, BO_DIVIDE}, {"*", "/"}, 20,
+                [&](shared_ptr<NExpression>& e) { parse_multiplicative_expression(e);},
+                [&](shared_ptr<NExpression>& e) { parse_unary_expression(e);} );
         return;
     }
     catch(backtrack btw)
@@ -598,7 +804,7 @@ void Parser::parse_multiplicative_expression(shared_ptr<NExpression>& bo)
     }
     try
     {
-        return parse_unary_expression(bo);
+        return parse_unary_expression(e);
     }
     catch(backtrack bte)
     {
@@ -610,13 +816,17 @@ void Parser::parse_multiplicative_expression(shared_ptr<NExpression>& bo)
 void Parser::parse_unary_expression(shared_ptr<NExpression>& expr)
 {
     Lexer l = lexer;
+
+    auto t = lexer.lex();
+    UNARY_OPERATOR op;
     try
     {
-        shared_ptr<NExpression> lhs = make_shared<NExpression>();
-        auto t = lexer.lex();
-        UNARY_OPERATOR op;
         if(t.tok == "-")
             op = UO_NEGATE;
+        else if(t.tok == "not")
+            op = UO_NOT;
+        else if(t.tok == "~")
+            op = UO_BITWISE_NOT;
         else
             throw(backtrack());
         shared_ptr<NExpression> rhs = make_shared<NExpression>();
@@ -634,6 +844,7 @@ void Parser::parse_unary_expression(shared_ptr<NExpression>& expr)
     {
         lexer = l;
     }
+
     try
     {
         return parse_primary_expression(expr);
@@ -730,12 +941,14 @@ void Parser::parse_brackets(shared_ptr<NExpression>& b)
 {
     if(lexer.lex().tok != "(")
         throw(backtrack());
-    shared_ptr<NExpression> n = make_shared<NExpression>();
-    parse_additive_expression(n);
+    auto br = make_shared<NBrackets>();
+    auto sub = make_shared<NExpression>();
+    parse_expression(sub);
+    br->subexpr.push_back(sub);
     if(lexer.lex().tok != ")")
         throw(backtrack());
-    n->precedence = 100;
-    b = n;
+    br->precedence = 100;
+    b = static_pointer_cast<NExpression>(br);
 }
 
 void Parser::parse_integer(shared_ptr<NIntegerLiteral>& ni)
@@ -834,23 +1047,11 @@ void Parser::parse_extern(shared_ptr<NExtern>& e)
         throw(ParseError(tok, "Expected closing parenthesis"));
 }
 
-void Parser::parse_indent(int expect)
-{
-    indent = 0;
-    while((lexer.lex(true).tok == "indent") || (lexer.lex(true).tok == "newline"))
-    {
-        indent++;
-        auto tok = lexer.lex();
-        if(tok.tok == "newline")
-            indent = 0;
-    }
-    if(indent < expect)
-        throw(IndentError(lexer.lex()));
-}
-
 void Parser::parse_binary_expression(shared_ptr<NExpression>& e,
                                      vector<BINARY_OPERATOR> ops,
-                                     vector<string> toks, int precedence)
+                                     vector<string> toks, int precedence,
+                                     std::function<void (shared_ptr<NExpression>&)> recurse,
+                                     std::function<void (shared_ptr<NExpression>&)> subexpr)
 {
     auto tok = lexer.lex(true);
     int count = 0;
@@ -866,7 +1067,6 @@ void Parser::parse_binary_expression(shared_ptr<NExpression>& e,
             if(tok.tok == t)
             {
                 count = 100;
-                cout << "match" << endl;
                 break;
             }
         }
@@ -874,7 +1074,7 @@ void Parser::parse_binary_expression(shared_ptr<NExpression>& e,
     }
 
     shared_ptr<NExpression> lhs = make_shared<NExpression>();
-    parse_unary_expression(lhs);
+    subexpr(lhs);
     auto t = lexer.lex();
     BINARY_OPERATOR op;
     bool got_tok = false;
@@ -887,12 +1087,13 @@ void Parser::parse_binary_expression(shared_ptr<NExpression>& e,
             got_tok = true;
             break;
         }
+        count++;
     }
     if(!got_tok)
         throw(backtrack());
 
     shared_ptr<NExpression> rhs = make_shared<NExpression>();
-    parse_multiplicative_expression(rhs);
+    recurse(rhs);
     auto bino = make_shared<NBinaryOperator>();
     bino->subexpr.push_back(lhs);
     bino->subexpr.push_back(rhs);

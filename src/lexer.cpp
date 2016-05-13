@@ -132,7 +132,22 @@ Token Lexer::get_token()
         else if(curc() == '=')
         {
             next();
+            if(curc() == '=')
+            {
+                next();
+                return Token("==", raw_tok, line, col);
+            }
             return Token("=", raw_tok, line, col);
+        }
+        else if(curc() == '!')
+        {
+            next();
+            if(curc() == '=')
+            {
+                next();
+                return Token("!=", raw_tok, line, col);
+            }
+            die("Unexpected character");
         }
         else if(curc() == ',')
         {
@@ -147,6 +162,11 @@ Token Lexer::get_token()
                 next();
                 return Token("<<", raw_tok, line, col);
             }
+            if(curc() == '=')
+            {
+                next();
+                return Token("<=", raw_tok, line, col);
+            }
             return Token("<", raw_tok, line, col);
         }
         else if(curc() == '>')
@@ -156,6 +176,11 @@ Token Lexer::get_token()
             {
                 next();
                 return Token(">>", raw_tok, line, col);
+            }
+            if(curc() == '=')
+            {
+                next();
+                return Token(">=", raw_tok, line, col);
             }
             return Token(">", raw_tok, line, col);
         }
@@ -174,6 +199,16 @@ Token Lexer::get_token()
             next();
             return Token("^", raw_tok, line, col);
         }
+        else if(curc() == '&')
+        {
+            next();
+            return Token("&", raw_tok, line, col);
+        }
+        else if(curc() == '~')
+        {
+            next();
+            return Token("~", raw_tok, line, col);
+        }
         if(isalpha(curc()))
         {
             string i = read_identifier();
@@ -181,8 +216,6 @@ Token Lexer::get_token()
                 return Token("bool_literal", "true", line, col);
             else if(i == "false")
                 return Token("bool_literal", "false", line, col);
-            else if(i == "def")
-                return Token("def", "def", line, col);
             else if(i == "var")
                 return Token("var", i, line, col);
             else if(i == "ref")
@@ -193,6 +226,24 @@ Token Lexer::get_token()
                 return Token("or", i, line, col);
             else if(i == "and")
                 return Token("and", i, line, col);
+            else if(i == "not")
+                return Token("not", i, line, col);
+            else if(i == "if")
+                return Token("if", i, line, col);
+            else if(i == "else")
+                return Token("else", i, line, col);
+            else if(i == "return")
+                return Token("return", i, line, col);
+            else if(i == "while")
+                return Token("while", i, line, col);
+            else if(i == "break")
+                return Token("break", i, line, col);
+            else if(i == "continue")
+                return Token("continue", i, line, col);
+            else if(i == "for")
+                return Token("for", i, line, col);
+            else if(i == "in")
+                return Token("in", i, line, col);
             else
                 return Token("identifier", i, line, col);
         }

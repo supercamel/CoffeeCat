@@ -11,7 +11,7 @@ void Generator::generate(NBlock* block, string fname)
     header += "#define ";
     header += fname_upper;
     header += "_H\n\n";
-    header += "#include <iostream>\n#include <etk/etk.h>\nusing namespace std;\n\n";
+    header += "#include <iostream>\n#include <etk/etk.h>\nusing namespace std;\nusing namespace etk;\n";
 
     source = "#include \"";
     source += fname;
@@ -36,7 +36,9 @@ void Generator::Visit(NBlock* block)
     {
         print_block_depth();
         i->Accept(this);
-        if(block_depth > 1)
+        auto p = source.end();
+        p--;
+        if((*p) != '\n')
             source += ";\n";
     }
     block_depth--;
@@ -89,6 +91,30 @@ void Generator::Visit(NBinaryOperator* bo)
     case BO_INCLUSIVE_OR:
         source += "|";
         break;
+    case BO_EXCLUSIVE_OR:
+        source += "^";
+        break;
+    case BO_BITWISE_AND:
+        source += "&";
+        break;
+    case BO_EQUAL:
+        source += "==";
+        break;
+    case BO_NOT_EQUAL:
+        source += "!=";
+        break;
+    case BO_LESS_THAN_EQUAL:
+        source += "<=";
+        break;
+    case BO_GREATER_THAN_EQUAL:
+        source += ">=";
+        break;
+    case BO_LESS_THAN:
+        source += "<";
+        break;
+    case BO_GREATER_THAN:
+        source += ">";
+        break;
     }
 
     (*it)->Accept(this);
@@ -124,6 +150,18 @@ void Generator::Visit(NUnaryOperator* uo)
     case UO_NEGATE:
     {
         source += "-";
+        (*uo->subexpr.begin())->Accept(this);
+    }
+    break;
+    case UO_BITWISE_NOT:
+    {
+        source += "~";
+        (*uo->subexpr.begin())->Accept(this);
+    }
+    break;
+    case UO_NOT:
+    {
+        source += "!";
         (*uo->subexpr.begin())->Accept(this);
     }
     break;
@@ -229,6 +267,58 @@ void Generator::Visit(NAtomicVariableDeclaration* a)
 void Generator::Visit(NExtern* e)
 {
     source += e->code;
+}
+
+void Generator::Visit(NBrackets* b)
+{
+    source += "(";
+    (*b->subexpr.begin())->Accept(this);
+    source += ")";
+}
+
+void Generator::Visit(NIfElse* ie)
+{
+    source += "if";
+    ie->condition->Accept(this);
+    source += "\n";
+    ie->block_if->Accept(this);
+    if(ie->block_else)
+    {
+        print_block_depth();
+        source += "else\n";
+        ie->block_else->Accept(this);
+    }
+}
+
+void Generator::Visit(NReturn* r)
+{
+    source += "return(";
+    if(r->expr)
+        r->expr->Accept(this);
+    source += ")";
+}
+
+void Generator::Visit(NWhile* w)
+{
+    source += "while";
+    w->condition->Accept(this);
+    source += "\n";
+    w->block->Accept(this);
+}
+
+void Generator::Visit(NFor* f)
+{
+    source += "for(auto& ";
+    f->lhs->Accept(this);
+    source += " : ";
+    f->rhs->Accept(this);
+    source += ")\n";
+    f->block->Accept(this);
+}
+
+void Generator::Visit(NControl* c)
+{
+    source += c->keyword;
 }
 
 void Generator::print_block_depth()

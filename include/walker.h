@@ -27,6 +27,13 @@ public:
 	virtual void Visit(class NParameterDeclaration* o) { unused(o); }
 	virtual void Visit(class NArgumentList* o) { unused(o); }
 	virtual void Visit(class NExtern* e) { unused(e); }
+	virtual void Visit(class NBrackets* e) { unused(e); }
+	virtual void Visit(class NIfElse* ie) { unused(ie); }
+	virtual void Visit(class NStatement* s) { unused(s); }
+	virtual void Visit(class NReturn*r) { unused(r); }
+	virtual void Visit(class NWhile* w) { unused(w); }
+	virtual void Visit(class NControl* c) { unused(c); }
+	virtual void Visit(class NFor* f) { unused(f); }
 };
 
 

@@ -26,6 +26,12 @@ public:
     void Visit(NString* s);
     void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
+    void Visit(NBrackets* b);
+    void Visit(NIfElse* ie);
+    void Visit(NReturn* r);
+    void Visit(NWhile* w);
+    void Visit(NFor* f);
+    void Visit(NControl* c);
 
     string header;
     string source;

@@ -22,12 +22,22 @@ enum BINARY_OPERATOR
     BO_ASSIGN,
     BO_LOGICAL_OR,
     BO_LOGICAL_AND,
-    BO_INCLUSIVE_OR
+    BO_INCLUSIVE_OR,
+    BO_EXCLUSIVE_OR,
+    BO_BITWISE_AND,
+    BO_EQUAL,
+    BO_NOT_EQUAL,
+    BO_LESS_THAN_EQUAL,
+    BO_GREATER_THAN_EQUAL,
+    BO_LESS_THAN,
+    BO_GREATER_THAN
 };
 
 enum UNARY_OPERATOR
 {
-    UO_NEGATE
+    UO_NEGATE,
+    UO_NOT,
+    UO_BITWISE_NOT
 };
 
 class Node
@@ -60,6 +70,81 @@ public:
     std::list<shared_ptr<NExpression>> subexpr;
     int precedence = 0;
 };
+
+
+class NStatement : public Node
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+};
+
+
+class NIfElse : public NStatement
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    shared_ptr<NExpression> condition;
+    shared_ptr<NBlock> block_if;
+    shared_ptr<NBlock> block_else;
+};
+
+class NReturn : public NStatement
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    shared_ptr<NExpression> expr;
+};
+
+
+class NWhile : public NStatement
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    shared_ptr<NExpression> condition;
+    shared_ptr<NBlock> block;
+};
+
+class NFor : public NStatement
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    shared_ptr<NIdentifier> lhs;
+    shared_ptr<NExpression> rhs;
+
+    shared_ptr<NBlock> block;
+};
+
+
+class NControl : public NStatement
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    string keyword;
+};
+
 
 class NExpressionList : public Node
 {
@@ -138,6 +223,15 @@ public:
 
     string code;
 };
+
+class NBrackets : public NExpression
+{
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+};
+
 
 class NBinaryOperator : public NExpression
 {

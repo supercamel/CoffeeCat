@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "nodes.h"
+#include <functional>
 
 //fatal parse error
 struct ParseError
@@ -38,7 +39,14 @@ public:
     void parse_top_level(NBlock& block);
     void parse_method(shared_ptr<NMethod>& block);
 
+    void parse_block(NBlock& block);
     void parse_block_item(NBlock& block);
+
+    void parse_if_else_statement(shared_ptr<NIfElse>& ie);
+    void parse_return_statement(shared_ptr<NReturn>& ie);
+    void parse_while_statement(shared_ptr<NWhile>& w);
+    void parse_for_statement(shared_ptr<NFor>& f);
+    void parse_control_statement(shared_ptr<NControl>& c);
 
     void parse_declaration(NBlock& block);
     void parse_variable_declaration(NBlock& block);
@@ -54,6 +62,10 @@ public:
     void parse_logical_or_expression(shared_ptr<NExpression>& expr);
     void parse_logical_and_expression(shared_ptr<NExpression>& expr);
     void parse_inclusive_or_expression(shared_ptr<NExpression>& expr);
+    void parse_exclusive_or_expression(shared_ptr<NExpression>& expr);
+    void parse_bitwise_and_expression(shared_ptr<NExpression>& expr);
+    void parse_equality_expression(shared_ptr<NExpression>& expr);
+    void parse_relational_expression(shared_ptr<NExpression>& expr);
     void parse_shift_expression(shared_ptr<NExpression>& expr);
     void parse_additive_expression(shared_ptr<NExpression>& expr);
     void parse_multiplicative_expression(shared_ptr<NExpression>& expr);
@@ -69,17 +81,32 @@ public:
     void parse_string(shared_ptr<NString>& s);
     void parse_extern(shared_ptr<NExtern>& e);
 
-    void parse_indent(int expect);
+    /*
+        Parses an indent and throws an indentation exception if the indent is not as expected.
+        returns number of indents parsed
+    */
+    int parse_indent(int expect);
 
+    /*
+        All of the binary operators (addition, subtraction and so on) are all parsed in a similar way.
+        There's a left hand size, a right hand side and an operator with a particular precedence.
+
+        parse_binary_expression() handles all binary operators and uses lambda functions for recursion.
+    */
     void parse_binary_expression(shared_ptr<NExpression>& e,
                                     vector<BINARY_OPERATOR> ops,
-                                    vector<string> toks, int precedence);
+                                    vector<string> toks, int precedence,
+                                    std::function<void (shared_ptr<NExpression>& e)> recurse,
+                                    std::function<void (shared_ptr<NExpression>& e)> subexpr);
     void check_precedence(shared_ptr<NExpression>& e);
 
+    /*
+        Returns true if a variable name is atomic. ie int, float, double etc
+    */
     bool variable_is_atomic(string var);
 
     Lexer& lexer;
-    int indent = 0;
+    int indent = 0; //current indent level
 };
 
 #endif // PARSER_H
