@@ -58,6 +58,7 @@ private:
     void block_comment();
     void line_comment();
     string read_string();
+    string read_char();
     numeric_const read_numeric_const();
     string read_identifier();
 

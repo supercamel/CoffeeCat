@@ -46,6 +46,17 @@ void Parser::parse_top_level(NBlock& block)
     {
         lexer = l;
     }
+
+    if(lexer.lex(true).tok == "global")
+    {
+        lexer.lex();
+        auto n = make_shared<NVariableDeclaration>();
+        parse_declaration(n);
+        n->global = true;
+        block.items.push_back(n);
+        return;
+    }
+
     throw(ParseError(lexer.lex(), "Expected method or class"));
 }
 
@@ -165,10 +176,12 @@ void Parser::parse_block_item(NBlock& block)
     Lexer l = lexer;
     try
     {
-        parse_declaration(block);
+        auto d = make_shared<NVariableDeclaration>();
+        parse_declaration(d);
         auto tok = lexer.lex();
         if(tok.tok != "newline")
             throw(ParseError(tok, "Expected newline after declaration"));
+        block.items.push_back(d);
         return;
     }
     catch(backtrack bte)
@@ -408,12 +421,16 @@ void Parser::parse_control_statement(shared_ptr<NControl>& c)
         throw(ParseError(lexer.lex(), "Expected new line after control statement"));
 }
 
-void Parser::parse_declaration(NBlock& block)
+void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
 {
     Lexer l = lexer;
     try
     {
-        parse_variable_declaration(block);
+        auto d = make_shared<NObjVariableDeclaration>();
+        cout << "parsing variable declaration" << endl;
+        parse_variable_declaration(d);
+        v = d;
+        cout << "done ok " << d->handle << endl;
         return;
     }
     catch(backtrack b)
@@ -422,7 +439,9 @@ void Parser::parse_declaration(NBlock& block)
     }
     try
     {
-        parse_atomic_declaration(block);
+        auto a = make_shared<NAtomicVariableDeclaration>();
+        parse_atomic_declaration(a);
+        v = a;
         return;
     }
     catch(backtrack b)
@@ -432,9 +451,8 @@ void Parser::parse_declaration(NBlock& block)
     throw(backtrack());
 }
 
-void Parser::parse_atomic_declaration(NBlock& block)
+void Parser::parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& vd)
 {
-    auto vd = make_shared<NAtomicVariableDeclaration>();
     auto tok = lexer.lex();
     if(tok.tok != "identifier")
         throw(backtrack());
@@ -458,12 +476,10 @@ void Parser::parse_atomic_declaration(NBlock& block)
     {
         throw(ParseError(tok, "Error parsing atomic declaration initialiser"));
     }
-    block.items.push_back(vd);
 }
 
-void Parser::parse_variable_declaration(NBlock& block)
+void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
 {
-    auto vd = make_shared<NVariableDeclaration>();
     auto tok = lexer.lex();
     if(tok.tok != "var")
         throw(backtrack());
@@ -489,7 +505,6 @@ void Parser::parse_variable_declaration(NBlock& block)
         auto n = make_shared<NExpressionList>();
         parse_expression_list(n);
         vd->list = n;
-        block.items.push_back(vd);
     }
     catch(backtrack b)
     {
@@ -540,15 +555,19 @@ void Parser::parse_assignment_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        parse_binary_expression(e, {BO_ASSIGN}, {"="}, 1,
+        parse_binary_expression(e, {BO_ASSIGN, BO_MUL_ASSIGN, BO_DIV_ASSIGN, BO_MOD_ASSIGN,
+                                    BO_ADD_ASSIGN, BO_SUB_ASSIGN, BO_LEFT_SHIFT_ASSIGN,
+                                    BO_RIGHT_SHIFT_ASSIGN, BO_AND_ASSIGN, BO_XOR_ASSIGN, BO_OR_ASSIGN},
+                                    {"=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|="}, 1,
                                 [&](shared_ptr<NExpression>& e) { parse_assignment_expression(e);},
-                                [&](shared_ptr<NExpression>& e) { parse_logical_or_expression(e);} );
+                                [&](shared_ptr<NExpression>& e) { parse_unary_expression(e);} );
         return;
     }
     catch(backtrack btw)
     {
         lexer = l;
     }
+
     try
     {
         return parse_logical_or_expression(e);
@@ -557,6 +576,7 @@ void Parser::parse_assignment_expression(shared_ptr<NExpression>& e)
     {
         lexer = l;
     }
+
     throw(backtrack());
 }
 
@@ -859,6 +879,17 @@ void Parser::parse_unary_expression(shared_ptr<NExpression>& expr)
 void Parser::parse_primary_expression(shared_ptr<NExpression>& np)
 {
     Lexer l = lexer;
+
+    try
+    {
+        parse_dot_list(np);
+        return;
+    }
+    catch(backtrack bt)
+    {
+        lexer = l;
+    }
+
     try
     {
         auto ni = make_shared<NMethodCall>();
@@ -937,6 +968,47 @@ void Parser::parse_primary_expression(shared_ptr<NExpression>& np)
     throw(backtrack());
 }
 
+void Parser::parse_dot_list(shared_ptr<NExpression>& dlist)
+{
+    Lexer l = lexer;
+    auto d = make_shared<NDot>();
+    try
+    {
+        auto e = make_shared<NMethodCall>();
+        parse_method_call(e);
+        d->subexpr.push_back(e);
+    }
+    catch(backtrack b)
+    {
+        lexer = l;
+
+            auto e = make_shared<NIdentifier>();
+            parse_identifier(e);
+            d->subexpr.push_back(e);
+
+    }
+
+    if(lexer.lex(true).tok != ".")
+    {
+        dlist = (*d->subexpr.begin());
+        return;
+    }
+
+    lexer.lex();
+    try
+    {
+        auto e = make_shared<NExpression>();
+        parse_dot_list(e);
+        d->subexpr.push_back(e);
+    }
+    catch(backtrack())
+    {
+        throw(ParseError(lexer.lex(), "Syntax error"));
+    }
+
+    dlist = d;
+}
+
 void Parser::parse_brackets(shared_ptr<NExpression>& b)
 {
     if(lexer.lex().tok != "(")
@@ -954,10 +1026,14 @@ void Parser::parse_brackets(shared_ptr<NExpression>& b)
 void Parser::parse_integer(shared_ptr<NIntegerLiteral>& ni)
 {
     auto tok = lexer.lex(true);
-    if(tok.tok != "int_literal")
+
+    if(tok.tok == "int_literal")
+        ni->value = stoi(tok.raw);
+    else if(tok.tok == "char_literal")
+        ni->value = tok.raw[0];
+    else
         throw(backtrack());
     lexer.lex();
-    ni->value = stoi(tok.raw);
 }
 
 void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
@@ -973,7 +1049,7 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         if(lexer.lex().tok != "<")
             throw(ParseError(tok, "Expected maximum string length to be declared."));
         tok = lexer.lex();
-        if(tok.tok != "int_literal")
+        if((tok.tok != "int_literal") && (tok.tok != "identifier"))
             throw(ParseError(tok, "Expected an integer to specify maximum string length."));
         if(lexer.lex().tok != ">")
             throw(ParseError(tok, "Expected a '>' token after string length"));

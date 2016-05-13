@@ -20,6 +20,16 @@ enum BINARY_OPERATOR
     BO_LEFT_SHIFT,
     BO_RIGHT_SHIFT,
     BO_ASSIGN,
+    BO_MUL_ASSIGN,
+    BO_DIV_ASSIGN,
+    BO_MOD_ASSIGN,
+    BO_ADD_ASSIGN,
+    BO_SUB_ASSIGN,
+    BO_LEFT_SHIFT_ASSIGN,
+    BO_RIGHT_SHIFT_ASSIGN,
+    BO_AND_ASSIGN,
+    BO_XOR_ASSIGN,
+    BO_OR_ASSIGN,
     BO_LOGICAL_OR,
     BO_LOGICAL_AND,
     BO_INCLUSIVE_OR,
@@ -157,7 +167,6 @@ public:
     }
 };
 
-
 class NIntegerLiteral : public NExpression
 {
 public:
@@ -255,6 +264,13 @@ public:
     }
 };
 
+class NDot : public NExpression
+{
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+};
 
 class NParameterDeclaration : public Node
 {
@@ -293,7 +309,18 @@ public:
     }
 };
 
-class NAtomicVariableDeclaration : public Node
+class NVariableDeclaration : public Node
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    bool global = false;
+};
+
+class NAtomicVariableDeclaration : public NVariableDeclaration
 {
 public:
     string type;
@@ -307,13 +334,15 @@ public:
     }
 };
 
-class NVariableDeclaration : public Node
+class NObjVariableDeclaration : public NVariableDeclaration
 {
 public:
     string type;
     string handle;
 
     shared_ptr<NExpressionList> list = nullptr;
+
+    bool global = false;
 
     virtual void Accept(TreeWalker* t)
     {

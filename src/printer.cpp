@@ -79,6 +79,36 @@ void Printer::Visit(NBinaryOperator* bo)
     case BO_GREATER_THAN:
         cout << "GREATER THAN" << endl;
         break;
+    case BO_MUL_ASSIGN:
+        cout << "MULTIPLY ASSIGN" << endl;
+        break;
+    case BO_DIV_ASSIGN:
+        cout << "DIVIDE ASSIGN" << endl;
+        break;
+    case BO_MOD_ASSIGN:
+        cout << "MODULUS ASSIGN" << endl;
+        break;
+    case BO_ADD_ASSIGN:
+        cout << "ADD ASSIGN" << endl;
+        break;
+    case BO_SUB_ASSIGN:
+        cout << "SUB ASSIGN" << endl;
+        break;
+    case BO_LEFT_SHIFT_ASSIGN:
+        cout << "LEFT SHIFT ASSIGN" << endl;
+        break;
+    case BO_RIGHT_SHIFT_ASSIGN:
+        cout << "RIGHT SHIFT ASSIGN" << endl;
+        break;
+    case BO_AND_ASSIGN:
+        cout << "AND ASSIGN" << endl;
+        break;
+    case BO_XOR_ASSIGN:
+        cout << "XOR ASSIGN" << endl;
+        break;
+    case BO_OR_ASSIGN:
+        cout << "OR ASSIGN" << endl;
+        break;
     }
 
     block_depth++;
@@ -148,7 +178,7 @@ void Printer::Visit(NMethodCall* m)
     block_depth--;
 }
 
-void Printer::Visit(NVariableDeclaration* v)
+void Printer::Visit(NObjVariableDeclaration* v)
 {
     print_block();
     cout << "Variable declaration " << v->type << " " << v->handle << endl;
@@ -271,6 +301,26 @@ void Printer::Visit(NControl* c)
 {
     print_block();
     cout << c->keyword << endl;
+}
+
+void Printer::Visit(NFor* f)
+{
+    print_block();
+    cout << "For" << endl;
+    f->lhs->Accept(this);
+    f->rhs->Accept(this);
+    f->block->Accept(this);
+}
+
+void Printer::Visit(NDot* d)
+{
+    auto i = d->subexpr.begin();
+    (*i++)->Accept(this);
+    block_depth++;
+    print_block();
+    cout << "dot" << endl;
+    (*i)->Accept(this);
+    block_depth--;
 }
 
 void Printer::print_block()

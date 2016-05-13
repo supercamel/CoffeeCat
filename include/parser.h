@@ -48,9 +48,9 @@ public:
     void parse_for_statement(shared_ptr<NFor>& f);
     void parse_control_statement(shared_ptr<NControl>& c);
 
-    void parse_declaration(NBlock& block);
-    void parse_variable_declaration(NBlock& block);
-    void parse_atomic_declaration(NBlock& block);
+    void parse_declaration(shared_ptr<NVariableDeclaration>& v);
+    void parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& v);
+    void parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& a);
 
     void parse_argument_list(shared_ptr<NArgumentList>& l);
     void parse_parameter_declaration(shared_ptr<NParameterDeclaration>& p);
@@ -77,9 +77,10 @@ public:
     void parse_identifier(shared_ptr<NIdentifier>& ni);
     void parse_float(shared_ptr<NFloatLiteral>& nf);
     void parse_boolean(shared_ptr<NBoolLiteral>& nf);
-    void parse_method_call(shared_ptr<NMethodCall>& m);
     void parse_string(shared_ptr<NString>& s);
     void parse_extern(shared_ptr<NExtern>& e);
+    void parse_method_call(shared_ptr<NMethodCall>& m);
+    void parse_dot_list(shared_ptr<NExpression>& expr);
 
     /*
         Parses an indent and throws an indentation exception if the indent is not as expected.

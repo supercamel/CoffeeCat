@@ -18,7 +18,7 @@ public:
     void Visit(NArgumentList* o);
     void Visit(NParameterDeclaration* pd);
     void Visit(NMethod* m);
-    void Visit(NVariableDeclaration* v);
+    void Visit(NObjVariableDeclaration* v);
     void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
     void Visit(NBrackets* b);
@@ -27,6 +27,8 @@ public:
     void Visit(NReturn* r);
     void Visit(NWhile* w);
     void Visit(NControl* c);
+    void Visit(NFor* f);
+    void Visit(NDot* d);
 
 private:
     void print_block();

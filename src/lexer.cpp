@@ -75,6 +75,11 @@ Token Lexer::get_token()
             string s = read_string();
             return Token("string_literal", s, line, col);
         }
+        else if(curc() == '\'')
+        {
+            string c = read_char();
+            return Token("char_literal", c, line, col);
+        }
         else if(curc() == '*')
         {
             next();
@@ -244,6 +249,8 @@ Token Lexer::get_token()
                 return Token("for", i, line, col);
             else if(i == "in")
                 return Token("in", i, line, col);
+            else if(i == "global")
+                return Token("global", i, line, col);
             else
                 return Token("identifier", i, line, col);
         }
@@ -346,6 +353,56 @@ string Lexer::read_string()
     return "";
 }
 
+string Lexer::read_char()
+{
+    string s = "";
+    while(text_pos < (text.length()-1))
+    {
+        next();
+        if(curc() == '\\')
+        {
+            next();
+            if(curc() == 'b')
+                s += "\b";
+            else if(curc() == 'f')
+                s += "\f";
+            else if(curc() == 'n')
+                s += "\n";
+            else if(curc() == 'r')
+                s += "\r";
+            else if(curc() == 't')
+                s += "\t";
+            else if(curc() == '\\')
+                s += "\\";
+            else if(curc() == '\'')
+                s += "\'";
+            else if(curc() == '0')
+                s += "\0";
+            else if(curc() == 'x')
+            {
+                next();
+                string h = "0x";
+                h += curc();
+                next();
+                h += curc();
+                s += std::to_string(std::stoul(h, nullptr, 16));
+            }
+            else
+                die("Unknown escape sequence.");
+        }
+        else if(curc() == '\'')
+        {
+            next();
+            if(s.length() != 1)
+                die("Invalid character.");
+            return s;
+        }
+        else
+            s += curc();
+    }
+    die("Character declaration reaches end of file.");
+    return "";
+}
 
 numeric_const Lexer::read_numeric_const()
 {

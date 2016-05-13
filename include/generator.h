@@ -22,7 +22,7 @@ public:
     void Visit(NArgumentList* o);
     void Visit(NParameterDeclaration* pd);
     void Visit(NMethod* m);
-    void Visit(NVariableDeclaration* v);
+    void Visit(NObjVariableDeclaration* v);
     void Visit(NString* s);
     void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
@@ -32,6 +32,7 @@ public:
     void Visit(NWhile* w);
     void Visit(NFor* f);
     void Visit(NControl* c);
+    void Visit(NDot* d);
 
     string header;
     string source;

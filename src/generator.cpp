@@ -115,6 +115,36 @@ void Generator::Visit(NBinaryOperator* bo)
     case BO_GREATER_THAN:
         source += ">";
         break;
+    case BO_MUL_ASSIGN:
+        source += "*=";
+        break;
+    case BO_DIV_ASSIGN:
+        source += "/=";
+        break;
+    case BO_MOD_ASSIGN:
+        source += "%=";
+        break;
+    case BO_ADD_ASSIGN:
+        source += "+=";
+        break;
+    case BO_SUB_ASSIGN:
+        source += "-=";
+        break;
+    case BO_LEFT_SHIFT_ASSIGN:
+        source += "<<=";
+        break;
+    case BO_RIGHT_SHIFT_ASSIGN:
+        source += ">>=";
+        break;
+    case BO_AND_ASSIGN:
+        source += "&=";
+        break;
+    case BO_XOR_ASSIGN:
+        source += "^=";
+        break;
+    case BO_OR_ASSIGN:
+        source += "|=";
+        break;
     }
 
     (*it)->Accept(this);
@@ -237,7 +267,7 @@ void Generator::Visit(NMethod* m)
     source += "\n";
 }
 
-void Generator::Visit(NVariableDeclaration* v)
+void Generator::Visit(NObjVariableDeclaration* v)
 {
     source += "auto ";
     source += v->handle;
@@ -319,6 +349,14 @@ void Generator::Visit(NFor* f)
 void Generator::Visit(NControl* c)
 {
     source += c->keyword;
+}
+
+void Generator::Visit(NDot* d)
+{
+    auto i = d->subexpr.begin();
+    (*i++)->Accept(this);
+    source += ".";
+    (*i)->Accept(this);
 }
 
 void Generator::print_block_depth()
