@@ -38,6 +38,7 @@ public:
 //private:
     void parse_top_level(NBlock& block);
     void parse_method(shared_ptr<NMethod>& block);
+    void parse_class(shared_ptr<NClass>& cl);
 
     void parse_block(NBlock& block);
     void parse_block_item(NBlock& block);

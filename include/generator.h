@@ -33,6 +33,7 @@ public:
     void Visit(NFor* f);
     void Visit(NControl* c);
     void Visit(NDot* d);
+    void Visit(NClass* c);
 
     string header;
     string source;

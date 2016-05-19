@@ -11,6 +11,7 @@ public:
     void Visit(NBinaryOperator* bo);
     void Visit(NIntegerLiteral* i);
     void Visit(NIdentifier* i);
+    void Visit(NFloatLiteral* f);
     void Visit(NString* s);
     void Visit(NUnaryOperator* uo);
     void Visit(NExpressionList* o);
@@ -29,6 +30,7 @@ public:
     void Visit(NControl* c);
     void Visit(NFor* f);
     void Visit(NDot* d);
+    void Visit(NClass* c);
 
 private:
     void print_block();

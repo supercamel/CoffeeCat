@@ -15,7 +15,7 @@ These are great languages but they can be a little tedious to develop with.
 
 <p>CoffeeCat source
 ```
-def int main():
+int main():
     cout << "Hello world" << endl
 ```
 Output main.cpp
@@ -41,7 +41,7 @@ int main();
 ```
 C++ inlining
 ```
-def void write_pin(var value):
+void write_pin(var value):
     int16 gpio_a = 0x5392
     extern("(*gpio_a) = value")
 ```
@@ -54,9 +54,9 @@ void write_pin(auto value)
 }
 ```
 <h2>Compiler</h2>
-<p>The CoffeeCat compiler has a hand coded lexer and recursive descent parser that uses backtracking, lookahead and elements of precedence parsing to generate a parse tree. The parse tree is then traversed using a visitor pattern to generate C++ source and header files. 
+<p>The CoffeeCat compiler has a hand coded lexer and recursive descent parser that uses backtracking, lookahead and elements of precedence passing to generate a parse tree. The parse tree is then traversed using a visitor pattern to generate C++ source and header files. 
 <p>CoffeeCat might appear to do nothing more than simply convert Python-esque syntax into C++ syntax, but it's more than a simple syntax translator. It's a full programming language that completely breaks down the input source files to generate new but equivalent C++. By giving the compiler so much insight into the CoffeeCat code, all manner of interesting transformations and possibilities arise. 
 <p>The compiler is written in C++, but as CoffeeCat grows it will hopefully become a self-hosting compiler. 
 
 <h2>Development Status</h2>
-<p>Presently, the parser is in an infantile state. It is only capable of parsing functions and expressions. It does not even to IF-ELSE or loop statements yet.
+<p>The parse can correctly build a parse tree for 95% of the language and C++ code generation is still an area of research. 

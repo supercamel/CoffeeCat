@@ -251,6 +251,16 @@ Token Lexer::get_token()
                 return Token("in", i, line, col);
             else if(i == "global")
                 return Token("global", i, line, col);
+            else if(i == "out")
+                return Token("out", i, line, col);
+            else if(i == "copyable")
+                return Token("copyable", i, line, col);
+            else if(i == "clone")
+                return Token("clone", i, line, col);
+            else if(i == "class")
+                return Token("class", i, line, col);
+            else if(i == "pass")
+                return Token("pass", i, line, col);
             else
                 return Token("identifier", i, line, col);
         }

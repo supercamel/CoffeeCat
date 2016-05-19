@@ -12,6 +12,8 @@ void Parser::parse(NBlock& block)
         try
         {
             parse_top_level(block);
+            while(lexer.lex(true).tok == "newline")
+                lexer.lex();
             continue;
         }
         catch(backtrack bte)
@@ -24,6 +26,7 @@ void Parser::parse(NBlock& block)
 void Parser::parse_top_level(NBlock& block)
 {
     Lexer l = lexer;
+    parse_indent(0);
     try
     {
         auto n = make_shared<NMethod>();
@@ -35,6 +38,19 @@ void Parser::parse_top_level(NBlock& block)
     {
         lexer = l;
     }
+
+    try
+    {
+        auto n = make_shared<NClass>();
+        parse_class(n);
+        block.items.push_back(n);
+        return;
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+
     try
     {
         auto n = make_shared<NExtern>();
@@ -52,24 +68,109 @@ void Parser::parse_top_level(NBlock& block)
         lexer.lex();
         auto n = make_shared<NVariableDeclaration>();
         parse_declaration(n);
+
         n->global = true;
         block.items.push_back(n);
         return;
     }
 
-    throw(ParseError(lexer.lex(), "Expected method or class"));
+    throw(ParseError(lexer.lex(), "Expected method, class or global variable declaration"));
+}
+
+void Parser::parse_class(shared_ptr<NClass>& c)
+{
+    auto tok = lexer.lex();
+    if(tok.tok != "class")
+        throw(backtrack());
+    tok = lexer.lex();
+    if(tok.tok != "identifier")
+        throw(ParseError(tok, "Expcted an identifier after class keyword"));
+    c->handle = tok.raw;
+
+    tok = lexer.lex();
+    if(tok.tok != ":")
+        throw(ParseError(tok, "Expected ':' after class declaration"));
+
+    tok = lexer.lex();
+    if(tok.tok == "identifier")
+    {
+        c->parent = tok.raw;
+        tok = lexer.lex();
+    }
+
+    if(tok.tok != "newline")
+        throw(ParseError(tok, "Expected new line after ':'"));
+
+    indent++;
+    parse_indent(indent);
+    while(true)
+    {
+        auto l = lexer;
+        try
+        {
+            auto m = make_shared<NMethod>();
+            parse_method(m);
+            c->methods.push_back(m);
+            continue;
+        }
+        catch(backtrack b)
+        {
+            lexer = l;
+        }
+
+        try
+        {
+            auto v = make_shared<NVariableDeclaration>();
+            parse_declaration(v);
+            if(lexer.lex().tok != "newline")
+                throw ParseError(lexer.lex(), "Expected new line after variable declaration");
+            c->vars.push_back(v);
+            goto newline;
+        }
+        catch(backtrack b)
+        {
+            lexer = l;
+        }
+
+        try
+        {
+            auto cl = make_shared<NClass>();
+            parse_class(cl);
+            c->subclasses.push_back(cl);
+            continue;
+        }
+        catch(backtrack b)
+        {
+            lexer = l;
+        }
+
+        throw ParseError(lexer.lex(), "Parse error");
+        newline:
+
+        int i = parse_indent(0);
+        if(i < indent)
+        {
+            indent--;
+            return;
+        }
+    }
+
 }
 
 void Parser::parse_method(shared_ptr<NMethod>& m)
 {
     auto tok = lexer.lex();
+    cout << tok.tok << endl;
     if(tok.tok != "identifier")
         throw(backtrack());
     m->return_type = tok.raw;
     tok = lexer.lex();
+    cout << tok.tok << endl;
     if(tok.tok != "identifier")
         throw(backtrack());
     m->foo_name = tok.raw;
+    if(lexer.lex(true).tok != "(")
+        throw(backtrack());
     try
     {
         auto al = make_shared<NArgumentList>();
@@ -95,6 +196,7 @@ void Parser::parse_argument_list(shared_ptr<NArgumentList>& l)
         throw(ParseError(tok, "Expected opening parenthesis ("));
     while(tok.tok != ")")
     {
+        auto lex = lexer;
         try
         {
             auto d = make_shared<NParameterDeclaration>();
@@ -103,6 +205,7 @@ void Parser::parse_argument_list(shared_ptr<NArgumentList>& l)
         }
         catch(backtrack b)
         {
+            lexer = lex;
             tok = lexer.lex();
             if((tok.tok != ",") && (tok.tok != ")"))
                 throw(ParseError(tok, "Syntax error in argument list."));
@@ -112,18 +215,29 @@ void Parser::parse_argument_list(shared_ptr<NArgumentList>& l)
 
 void Parser::parse_parameter_declaration(shared_ptr<NParameterDeclaration>& d)
 {
-    auto tok = lexer.lex(true);
+    auto tok = lexer.lex();
+    if((tok.tok != "identifier") && (tok.tok != "var"))
+    {
+        if((tok.tok != "in") && (tok.tok != "out") && (tok.tok != "clone"))
+            throw(backtrack());
+
+        if(tok.tok == "out")
+            d->output = true;
+        if(tok.tok == "clone")
+            d->clone = true;
+
+        tok = lexer.lex();
+    }
+
     if((tok.tok != "identifier") && (tok.tok != "var"))
         throw(backtrack());
-    lexer.lex();
+
     if(tok.tok == "var")
         d->type = "auto";
     else
         d->type = tok.raw;
     tok = lexer.lex();
-    if(tok.tok == "ref")
-        d->refer = true;
-    else if(tok.tok == "identifier")
+    if(tok.tok == "identifier")
     {
         d->handle = tok.raw;
         return;
@@ -427,10 +541,8 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
     try
     {
         auto d = make_shared<NObjVariableDeclaration>();
-        cout << "parsing variable declaration" << endl;
         parse_variable_declaration(d);
         v = d;
-        cout << "done ok " << d->handle << endl;
         return;
     }
     catch(backtrack b)
@@ -490,6 +602,13 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
     tok = lexer.lex();
     if(tok.tok != "=")
         throw(ParseError(tok, "Expected assignment operator for variable declaration"));
+
+    if(lexer.lex(true).tok == "copyable")
+    {
+        lexer.lex();
+        vd->copyable = true;
+    }
+
     try
     {
         auto id = make_shared<NIdentifier>();
@@ -515,6 +634,9 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
 void Parser::parse_expression(shared_ptr<NExpression>& e)
 {
     Lexer l = lexer;
+    if(lexer.lex().tok == "pass")
+        return;
+    lexer = l;
     try
     {
         parse_assignment_expression(e);
@@ -1039,6 +1161,20 @@ void Parser::parse_integer(shared_ptr<NIntegerLiteral>& ni)
 void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
 {
     auto tok = lexer.lex(true);
+    auto t = tok;
+    if(t.tok == "out")
+    {
+        id->output = true;
+        lexer.lex();
+        tok = lexer.lex(true);
+    }
+    else if(t.tok == "copy")
+    {
+        id->copyable = true;
+        lexer.lex();
+        tok = lexer.lex(true);
+    }
+
     if(tok.tok != "identifier")
         throw(backtrack());
     if(variable_is_atomic(tok.raw))

@@ -146,6 +146,12 @@ void Printer::Visit(NIntegerLiteral* i)
     cout << "Int literal " << i->value << endl;
 }
 
+void Printer::Visit(NFloatLiteral* f)
+{
+    print_block();
+    cout << "Float literal " << f->value << endl;
+}
+
 void Printer::Visit(NIdentifier* i)
 {
     print_block();
@@ -181,8 +187,11 @@ void Printer::Visit(NMethodCall* m)
 void Printer::Visit(NObjVariableDeclaration* v)
 {
     print_block();
+    if(v->copyable)
+        cout << "Copyable ";
     cout << "Variable declaration " << v->type << " " << v->handle << endl;
     print_block();
+
     cout << "Args" << endl;
     block_depth++;
     v->list->Accept(this);
@@ -204,8 +213,6 @@ void Printer::Visit(NParameterDeclaration* pd)
     print_block();
     cout << "Parameter declaration ";
     cout << pd->type << " ";
-    if(pd->refer)
-        cout << "refer ";
     cout << pd->handle << endl;
 }
 
@@ -235,6 +242,20 @@ void Printer::Visit(NBrackets* b)
     cout << "Brackets" << endl;
     block_depth++;
     (*b->subexpr.begin())->Accept(this);
+    block_depth--;
+}
+
+void Printer::Visit(NClass* c)
+{
+    print_block();
+    cout << "Class " << c->handle << " : " << c->parent << endl;
+    block_depth++;
+    for(auto cl : c->subclasses)
+        cl->Accept(this);
+    for(auto m : c->methods)
+        m->Accept(this);
+    for(auto v : c->vars)
+        v->Accept(this);
     block_depth--;
 }
 

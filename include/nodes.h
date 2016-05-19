@@ -209,6 +209,8 @@ public:
     }
 
     string ident;
+    bool copyable = false;
+    bool output = false;
 };
 
 class NString : public NExpression
@@ -282,7 +284,9 @@ public:
 
     string type;
     string handle;
-    bool refer = false;
+
+    bool clone = false;
+    bool output = false;
 };
 
 class NArgumentList : public Node
@@ -341,8 +345,7 @@ public:
     string handle;
 
     shared_ptr<NExpressionList> list = nullptr;
-
-    bool global = false;
+    bool copyable = false;
 
     virtual void Accept(TreeWalker* t)
     {
@@ -355,6 +358,22 @@ class NMethodCall : public NExpression
 public:
     string handle;
     shared_ptr<NExpressionList> list = nullptr;
+
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+};
+
+
+class NClass : public Node
+{
+public:
+    string parent;
+    string handle;
+    vector<shared_ptr<NMethod>> methods;
+    vector<shared_ptr<NVariableDeclaration>> vars;
+    vector<shared_ptr<NClass>> subclasses;
 
     virtual void Accept(TreeWalker* t)
     {

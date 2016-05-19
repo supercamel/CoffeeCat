@@ -244,12 +244,36 @@ void Generator::Visit(NParameterDeclaration* pd)
 {
     string s = pd->type;
     s += " ";
-    if(pd->refer)
-        s += "&";
     s += pd->handle;
 
     header += s;
     source += s;
+}
+
+void Generator::Visit(NClass* c)
+{
+    header += "class ";
+    header += c->handle;
+    if(c->parent.length())
+        header += " : public " + c->parent;
+    header += "\n{\npublic:\n";
+
+    auto s = source;
+    source = "";
+
+    for(auto cl : c->subclasses)
+        cl->Accept(this);
+
+    auto h = header;
+    for(auto m : c->methods)
+        m->Accept(this);
+    header = h;
+
+
+    header += source;
+    source = "";
+    source = s;
+    header += "};\n";
 }
 
 void Generator::Visit(NMethod* m)
