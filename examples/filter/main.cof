@@ -1,0 +1,11 @@
+
+
+int main():
+	var pool = Pool<1024>()
+	var filter = shared<pool, 1024> LowPassFilter()
+	filter->gain = 0.8
+	
+	for i in range(0, 100):
+		filter->step(i)
+	
+	io.print(filter->accumulator, "\n")

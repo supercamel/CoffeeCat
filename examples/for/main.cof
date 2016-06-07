@@ -1,0 +1,30 @@
+/**
+ * For loops
+ */
+
+int main():
+	
+	io.print("Looping over a range\n")
+	for i in range(10, 15):
+	    io.print(i, " ")
+	
+	io.print("\nStarting at zero\n")
+	for i in range(5):
+	    io.print(i, " ")
+	    
+	io.print("\n\nIterating over an array\n")
+	var array = Array<int, 10>()
+	for i in range(5):
+	    array.at(i) = i
+	
+	for a in array:
+	    io.print(a, " ")
+	
+	io.print("\nIterating over a list\n")
+	var list = List<int, 10>()
+	list.append(5)
+	list.append(15)
+	
+	for a in list:
+	    io.print(a, " ")
+	io.print("\n")

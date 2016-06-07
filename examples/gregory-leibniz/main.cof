@@ -1,0 +1,17 @@
+/**
+ * Calculates the value of PI using the Gregory-Leibniz formula.
+ */
+
+int main():
+	float count = 1.0
+	float pi = 0
+	while(count < 100000):
+		pi += (4.0/count)
+		count += 2.0
+		pi -= (4.0/count)
+		count += 2.0
+	
+	
+	io.print("Pi is: ", pi, "\n")
+
+
