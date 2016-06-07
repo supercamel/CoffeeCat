@@ -1,7 +1,8 @@
 #ifndef COFFEECAT_PRINT_H
 #define COFFEECAT_PRINT_H
 
-#include <ninjaskit/ninjaskit.h>
+#include <etk/etk.h>
+#include <iostream>
 
 constexpr uint32 max_line_length = 128;
 
@@ -11,7 +12,7 @@ class Printer : public etk::Stream<Printer>
 public:
     void put(char c)
     {
-        Serial1.put(c);
+        std::cout << c << std::flush;
     }
     
 
