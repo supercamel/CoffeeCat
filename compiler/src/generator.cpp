@@ -287,9 +287,13 @@ void Generator::Visit(NClass* c)
 
     auto h = header;
     generate_decl = true;
-    source += "virtual ";
+
     for(auto m : c->methods)
+    {
+        //source += "virtual ";
         m->Accept(this);
+    }
+
     generate_decl = false;
 
     generate_auto = false;
@@ -372,6 +376,13 @@ void Generator::Visit(NMethod* m)
 
 void Generator::Visit(NObjVariableDeclaration* v)
 {
+    if(v->global)
+    {
+        header += "extern ";
+        header += v->type + " ";
+        header += v->handle + ";\n";
+    }
+
     if(generate_auto)
         source += "auto";
     else
@@ -390,6 +401,7 @@ void Generator::Visit(NObjVariableDeclaration* v)
             source += v->type;
             source += ">(";
             source += v->pool;
+            source += ", ";
             v->list->Accept(this);
             source += ")";
             return;

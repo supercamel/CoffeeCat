@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
             string fname = f;
             string base_fname = fname.substr(0, fname.find_last_of("."));
             cofheader << "#include \"" << base_fname << ".h\"\n";
+            cout << base_fname << endl;
             gen.generate(&head, base_fname);
             ofstream hout(outpath + base_fname+".h");
             hout << gen.header;
@@ -80,18 +81,22 @@ int main(int argc, char *argv[])
         catch(LexerError le)
         {
             cout << "Lexer error: " << le.msg << endl;
+            return -1;
         }
         catch(ParseError pe)
         {
             cout << "Parse error Line: " << pe.tok.line << " Col: " << pe.tok.col << " " << pe.msg << endl;
+            return -1;
         }
         catch(CompilerError ce)
         {
             cout << ce.msg << endl;
+            return -1;
         }
         catch(IndentError e)
         {
             cout << "Indentation error on line " << e.tok.line << endl;
+            return -1;
         }
         catch(std::string msg)
         {

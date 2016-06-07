@@ -105,7 +105,7 @@ public:
     /*
         Returns true if a variable name is atomic. ie int, float, double etc
     */
-    bool variable_is_atomic(string var);
+    static bool variable_is_atomic(string var);
 
     Lexer& lexer;
     int indent = 0; //current indent level

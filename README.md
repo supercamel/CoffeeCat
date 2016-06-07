@@ -1,6 +1,7 @@
 <h1>CoffeeCat</h1>
-<p>CoffeeCat is a programming language and a source-to-source compiler that produces C++. It is in early development. Check the status below.
-<h2>Why?</h2>
+<p>CoffeeCat is a programming language that makes it easy to write reliable code and gives you more time to work on ideas and solving problems. 
+<p>It's designed with micro-controllers in mind, so it's very fast and lean, yet high-level enough to be a very productive language. It works by trans-compiling high level CoffeeCat code into C++. 
+<h2>Intro</h2>
 <p>CoffeeCat is a high level language for micro-controllers. 
 Before CoffeeCat, if you wanted to program a micro-controller (such as an Arduino or STM32 board), you would probably need to use C or C++. 
 These are great languages but they can be a little tedious to develop with. 

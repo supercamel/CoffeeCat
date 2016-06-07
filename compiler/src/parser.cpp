@@ -102,7 +102,6 @@ void Parser::parse_class(shared_ptr<NClass>& c)
         throw(ParseError(tok, "Expected new line after ':'"));
 
     indent++;
-    cout << indent << endl;
     parse_indent(indent);
     while(true)
     {
@@ -117,6 +116,7 @@ void Parser::parse_class(shared_ptr<NClass>& c)
                 indent--;
                 return;
             }
+            continue;
         }
         catch(backtrack b)
         {
