@@ -1,0 +1,22 @@
+/**
+ * CoffeeCat supports single inheritance.
+ */
+
+
+class Animal:
+    float smellyness():
+        return 5.0
+
+class Dog:
+    float smellyness():
+        if(is_wet):
+            return 15.0
+        return 7.0
+    
+    bool is_wet = false
+    
+int main():
+    var dog = Dog()
+    var adog = Animal(dog)
+    
+    io.print(adog.smellyness(), "\n")
