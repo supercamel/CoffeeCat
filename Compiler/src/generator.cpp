@@ -1,6 +1,12 @@
 #include "generator.h"
 #include <algorithm>
 
+Generator::Generator()
+{
+
+}
+
+
 void Generator::generate(NBlock* block, string fname)
 {
     header = "#ifndef ";
@@ -11,11 +17,9 @@ void Generator::generate(NBlock* block, string fname)
     header += "#define ";
     header += fname_upper;
     header += "_H\n\n";
-    header += "#include <iostream>\n#include <etk/etk.h>\nusing namespace std;\nusing namespace etk;\n";
+    header += "#include \"stdlib/print.h\"\n#include <etk/etk.h>\nusing namespace etk;\n";
 
-    source = "#include \"";
-    source += fname;
-    source += ".h\"\n\n";
+    source = "#include \"coffee_header.h\"\n\n";
 
     block->Accept(this);
 
@@ -147,7 +151,11 @@ void Generator::Visit(NBinaryOperator* bo)
         break;
     }
 
+    if(BO_ASSIGN)
+        lhs = false;
     (*it)->Accept(this);
+    if(BO_ASSIGN)
+        lhs = false;
 }
 
 void Generator::Visit(NIntegerLiteral* i)
@@ -221,7 +229,6 @@ void Generator::Visit(NMethodCall* o)
 
 void Generator::Visit(NArgumentList* o)
 {
-    header += "(";
     source += "(";
 
     int count = 0;
@@ -230,23 +237,35 @@ void Generator::Visit(NArgumentList* o)
         i->Accept(this);
         count++;
         if(count < o->args.size())
-        {
-            header += ", ";
             source += ", ";
-        }
     }
 
-    header += ");\n";
     source += ")\n";
 }
 
 void Generator::Visit(NParameterDeclaration* pd)
 {
-    string s = pd->type;
-    s += " ";
-    s += pd->handle;
+    string s;
+    if(pd->output)
+    {
+        s = pd->type;
+        s += "& ";
+        s += pd->handle;
+    }
+    else if(pd->clone)
+    {
+        s = pd->type;
+        s += " ";
+        s += pd->handle;
+    }
+    else
+    {
+        s = "const ";
+        s += pd->type;
+        s += "& ";
+        s += pd->handle;
+    }
 
-    header += s;
     source += s;
 }
 
@@ -261,45 +280,132 @@ void Generator::Visit(NClass* c)
     auto s = source;
     source = "";
 
+    in_class.push_back(c->handle);
+
     for(auto cl : c->subclasses)
         cl->Accept(this);
 
     auto h = header;
+    generate_decl = true;
     for(auto m : c->methods)
         m->Accept(this);
+    generate_decl = false;
+
+    generate_auto = false;
+    for(auto v : c->vars)
+    {
+        source += "\t";
+        v->Accept(this);
+        source += ";\n";
+    }
+    generate_auto = true;
+
     header = h;
 
 
     header += source;
     source = "";
     source = s;
+
+    for(auto m : c->methods)
+        m->Accept(this);
+
+    in_class.pop_back();
+
     header += "};\n";
 }
 
 void Generator::Visit(NMethod* m)
 {
-    string dec = m->return_type;
-    dec += " ";
-    dec += m->foo_name;
+    if(generate_decl)
+    {
+        string dec;
+        if(in_class.size())
+        {
+            if((m->foo_name[0] != '~') && (m->foo_name != in_class.back()))
+               dec = m->return_type;
+        }
+        else
+            dec = m->return_type;
+        dec += " ";
+        dec += m->foo_name;
 
-    header += dec;
-    source += dec;
+        source += dec;
 
-    m->args->Accept(this);
-    m->block.Accept(this);
+        m->args->Accept(this);
+        source += ";\n";
+    }
+    else
+    {
+        string dec;
+        if(in_class.size())
+        {
+            if((m->foo_name[0] != '~') && (m->foo_name != in_class.back()))
+               dec = m->return_type;
+        }
+        else
+            dec = m->return_type;
+        dec += " ";
+        for(auto& s : in_class)
+            dec += s + "::";
+        dec += m->foo_name;
 
-    source += "\n";
+        if(!in_class.size())
+            header += dec;
+
+        source += dec;
+        auto s = source;
+        source = "";
+
+        if(!in_class.size())
+            header += "(";
+        m->args->Accept(this);
+        if(!in_class.size())
+            header += ");\n";
+
+        m->block.Accept(this);
+
+        source = s + source + "\n";
+    }
 }
 
 void Generator::Visit(NObjVariableDeclaration* v)
 {
-    source += "auto ";
+    if(generate_auto)
+        source += "auto";
+    else
+        source += v->type;
+
+    source += " ";
     source += v->handle;
     source += " = ";
-    source += v->type;
+    if(v->copyable)
+    {
+        if(v->pool_size)
+        {
+            source += "etk::make_pool_ptr<";
+            source += to_string(v->pool_size);
+            source += ", ";
+            source += v->type;
+            source += ">(";
+            source += v->pool;
+            v->list->Accept(this);
+            source += ")";
+            return;
+        }
+        else
+        {
+            source += "etk::make_smart_ptr<";
+            source += v->type;
+            source += ">";
+        }
+    }
+    else
+        source += v->type;
     source += "(";
     v->list->Accept(this);
     source += ")";
+
 }
 
 void Generator::Visit(NString* s)
@@ -379,7 +485,10 @@ void Generator::Visit(NDot* d)
 {
     auto i = d->subexpr.begin();
     (*i++)->Accept(this);
-    source += ".";
+    if(d->ptr)
+        source += "->";
+    else
+        source += ".";
     (*i)->Accept(this);
 }
 

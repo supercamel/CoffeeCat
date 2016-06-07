@@ -97,6 +97,11 @@ Token Lexer::get_token()
                 block_comment();
                 continue;
             }
+            if(curc() == '/')
+            {
+                line_comment();
+                continue;
+            }
             return Token("/", raw_tok, line, col);
         }
         else if(curc() == '+')
@@ -112,6 +117,11 @@ Token Lexer::get_token()
         else if(curc() == '-')
         {
             next();
+            if(curc() == '>')
+            {
+                next();
+                return Token("->", raw_tok, line, col);
+            }
             if(curc() == '=')
             {
                 next();
@@ -253,8 +263,8 @@ Token Lexer::get_token()
                 return Token("global", i, line, col);
             else if(i == "out")
                 return Token("out", i, line, col);
-            else if(i == "copyable")
-                return Token("copyable", i, line, col);
+            else if(i == "shared")
+                return Token("shared", i, line, col);
             else if(i == "clone")
                 return Token("clone", i, line, col);
             else if(i == "class")
@@ -322,34 +332,11 @@ string Lexer::read_string()
         next();
         if(curc() == '\\') //reached an escape character
         {
-            next();
-            if(curc() == 'b')
-                s += "\b";
-            else if(curc() == 'f')
-                s += "\f";
-            else if(curc() == 'n')
-                s += "\n";
-            else if(curc() == 'r')
-                s += "\r";
-            else if(curc() == 't')
-                s += "\t";
-            else if(curc() == '\\')
-                s += "\\";
-            else if(curc() == '"')
+            if(curc() == '"')
                 s += "\"";
-            else if(curc() == '0')
-                s += "\0";
-            else if(curc() == 'x')
-            {
-                next();
-                string h = "0x";
-                h += curc();
-                next();
-                h += curc();
-                s += std::to_string(std::stoul(h, nullptr, 16));
-            }
             else
-                die("Unknown escape sequence.");
+                s += "\\";
+
         }
         else if(curc() == '"')
         {

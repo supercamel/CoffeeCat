@@ -268,10 +268,13 @@ public:
 
 class NDot : public NExpression
 {
+public:
     virtual void Accept(TreeWalker* t)
     {
         t->Visit(this);
     }
+
+    bool ptr = false;
 };
 
 class NParameterDeclaration : public Node
@@ -322,6 +325,8 @@ public:
     }
 
     bool global = false;
+    string pool;
+    int pool_size = 0;
 };
 
 class NAtomicVariableDeclaration : public NVariableDeclaration

@@ -5,9 +5,51 @@
 #include "walker.h"
 #include "nodes.h"
 
+
+struct CompilerError
+{
+    CompilerError(Token tok, string m)
+    {
+        msg = "Compiler error Line: ";
+        msg += to_string(tok.line);
+        msg += " Col: ";
+        msg += to_string(tok.col);
+        msg += " " + m;
+    }
+    string msg;
+};
+
+struct CofVariable
+{
+    string ident;
+    string type;
+    int depth = 0;
+    bool copyable = false;
+    bool atomic = false;
+};
+
+
+struct CofMethod
+{
+    string ident;
+    string r_type; //return type
+    vector<CofVariable> params;
+};
+
+struct CofObject
+{
+    string ident;
+    vector<CofMethod> methods;
+    vector<CofVariable> vars;
+};
+
+
+
 class Generator : public TreeWalker
 {
 public:
+    Generator();
+
     void generate(NBlock* block, string fname);
 
     void Visit(NBlock* block);
@@ -40,8 +82,14 @@ public:
 
 private:
     int block_depth = 0;
+    bool lhs = true;
+
+    vector<string> in_class;
 
     void print_block_depth();
+
+    bool generate_auto = true; //if true, prints out auto instead of full type name
+    bool generate_decl = false;
 };
 
 

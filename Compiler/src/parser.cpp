@@ -160,15 +160,21 @@ void Parser::parse_class(shared_ptr<NClass>& c)
 void Parser::parse_method(shared_ptr<NMethod>& m)
 {
     auto tok = lexer.lex();
-    cout << tok.tok << endl;
     if(tok.tok != "identifier")
         throw(backtrack());
     m->return_type = tok.raw;
     tok = lexer.lex();
-    cout << tok.tok << endl;
+    m->foo_name = "";
+
+    if(tok.tok == "~") //special case for destructors
+    {
+        m->foo_name += "~";
+        tok = lexer.lex();
+    }
+
     if(tok.tok != "identifier")
         throw(backtrack());
-    m->foo_name = tok.raw;
+    m->foo_name += tok.raw;
     if(lexer.lex(true).tok != "(")
         throw(backtrack());
     try
@@ -373,6 +379,9 @@ void Parser::parse_block_item(NBlock& block)
     {
         auto e = make_shared<NExpression>();
         parse_expression(e);
+        while(lexer.lex(true).tok == "indent")
+            lexer.lex();
+
         auto tok = lexer.lex();
         if(tok.tok != "newline")
             throw(ParseError(tok, "Expected newline after expression"));
@@ -573,7 +582,7 @@ void Parser::parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& vd
     vd->type = tok.raw;
     tok = lexer.lex();
     if(tok.tok != "identifier")
-        throw(ParseError(tok, "Expected identifier after var keyword"));
+        throw(ParseError(tok, "Expected identifier after atomic type keyword"));
     vd->handle = tok.raw;
     tok = lexer.lex();
     if(tok.tok != "=")
@@ -603,10 +612,26 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
     if(tok.tok != "=")
         throw(ParseError(tok, "Expected assignment operator for variable declaration"));
 
-    if(lexer.lex(true).tok == "copyable")
+    if(lexer.lex(true).tok == "shared")
     {
         lexer.lex();
         vd->copyable = true;
+        if(lexer.lex(true).tok == "<")
+        {
+            lexer.lex();
+            tok = lexer.lex();
+            if(tok.tok != "identifier")
+                throw(ParseError(tok, "Expected pool name"));
+            vd->pool = tok.raw;
+            if(lexer.lex().tok != ",")
+                throw(ParseError(tok, "Expected comma after pool name"));
+            tok = lexer.lex();
+            if(tok.tok != "int_literal")
+                throw(ParseError(tok, "Expected int literal to specify pool size"));
+            vd->pool_size = stoi(tok.raw);
+            if(lexer.lex().tok != ">")
+                throw(ParseError(tok, "Expected > after int literal"));
+        }
     }
 
     try
@@ -1110,13 +1135,15 @@ void Parser::parse_dot_list(shared_ptr<NExpression>& dlist)
 
     }
 
-    if(lexer.lex(true).tok != ".")
+    if((lexer.lex(true).tok != ".") && (lexer.lex(true).tok != "->"))
     {
         dlist = (*d->subexpr.begin());
         return;
     }
 
-    lexer.lex();
+    auto tok = lexer.lex();
+    if(tok.tok == "->")
+        d->ptr = true;
     try
     {
         auto e = make_shared<NExpression>();
@@ -1162,6 +1189,7 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
 {
     auto tok = lexer.lex(true);
     auto t = tok;
+
     if(t.tok == "out")
     {
         id->output = true;
@@ -1179,7 +1207,7 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         throw(backtrack());
     if(variable_is_atomic(tok.raw))
         throw(backtrack());
-    if(tok.raw == "string")
+    if(tok.raw == "String")
     {
         lexer.lex();
         if(lexer.lex().tok != "<")
@@ -1190,6 +1218,67 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         if(lexer.lex().tok != ">")
             throw(ParseError(tok, "Expected a '>' token after string length"));
         id->ident = "etk::StaticString<";
+        id->ident += tok.raw;
+        id->ident += ">";
+        return;
+    }
+    else if(tok.raw == "Pool")
+    {
+        lexer.lex();
+        if(lexer.lex().tok != "<")
+            throw(ParseError(tok, "Expected maximum pool size to be declared."));
+        tok = lexer.lex();
+        if((tok.tok != "int_literal") && (tok.tok != "identifier"))
+            throw(ParseError(tok, "Expected an integer to specify maximum pool size."));
+        if(lexer.lex().tok != ">")
+            throw(ParseError(tok, "Expected a '>' token after pool size"));
+        id->ident = "etk::Pool<";
+        id->ident += tok.raw;
+        id->ident += ">";
+        return;
+    }
+    else if(tok.raw == "Array")
+    {
+        lexer.lex();
+        if(lexer.lex().tok != "<")
+            throw(ParseError(tok, "Expected maximum array size to be declared."));
+        tok = lexer.lex();
+        if(tok.tok != "identifier")
+            throw(ParseError(tok, "Expected identifier"));
+        string type = tok.raw;
+        tok = lexer.lex();
+        if(tok.tok != ",")
+            throw(ParseError(tok, "Expected ','"));
+        tok = lexer.lex();
+        if((tok.tok != "int_literal") && (tok.tok != "identifier"))
+            throw(ParseError(tok, "Expected an integer to specify array size."));
+        if(lexer.lex().tok != ">")
+            throw(ParseError(tok, "Expected a '>' token after array size"));
+        id->ident = "etk::Array<";
+        id->ident += type + ", ";
+        id->ident += tok.raw;
+        id->ident += ">";
+        return;
+    }
+    else if(tok.raw == "List")
+    {
+        lexer.lex();
+        if(lexer.lex().tok != "<")
+            throw(ParseError(tok, "Expected maximum list size to be declared."));
+        tok = lexer.lex();
+        if(tok.tok != "identifier")
+            throw(ParseError(tok, "Expected identifier"));
+        string type = tok.raw;
+        tok = lexer.lex();
+        if(tok.tok != ",")
+            throw(ParseError(tok, "Expected ','"));
+        tok = lexer.lex();
+        if((tok.tok != "int_literal") && (tok.tok != "identifier"))
+            throw(ParseError(tok, "Expected an integer to specify list size."));
+        if(lexer.lex().tok != ">")
+            throw(ParseError(tok, "Expected a '>' token after list size"));
+        id->ident = "etk::List<";
+        id->ident += type + ", ";
         id->ident += tok.raw;
         id->ident += ">";
         return;
