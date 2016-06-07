@@ -287,6 +287,7 @@ void Generator::Visit(NClass* c)
 
     auto h = header;
     generate_decl = true;
+    source += "virtual ";
     for(auto m : c->methods)
         m->Accept(this);
     generate_decl = false;

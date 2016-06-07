@@ -109,6 +109,7 @@ public:
 
     Lexer& lexer;
     int indent = 0; //current indent level
+    int last_indent = 0;
 };
 
 #endif // PARSER_H

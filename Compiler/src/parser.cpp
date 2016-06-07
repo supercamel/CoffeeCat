@@ -102,6 +102,7 @@ void Parser::parse_class(shared_ptr<NClass>& c)
         throw(ParseError(tok, "Expected new line after ':'"));
 
     indent++;
+    cout << indent << endl;
     parse_indent(indent);
     while(true)
     {
@@ -111,7 +112,11 @@ void Parser::parse_class(shared_ptr<NClass>& c)
             auto m = make_shared<NMethod>();
             parse_method(m);
             c->methods.push_back(m);
-            continue;
+            if(last_indent < indent)
+            {
+                indent--;
+                return;
+            }
         }
         catch(backtrack b)
         {
@@ -137,7 +142,7 @@ void Parser::parse_class(shared_ptr<NClass>& c)
             auto cl = make_shared<NClass>();
             parse_class(cl);
             c->subclasses.push_back(cl);
-            continue;
+            goto newline;
         }
         catch(backtrack b)
         {
@@ -192,7 +197,7 @@ void Parser::parse_method(shared_ptr<NMethod>& m)
         throw(ParseError(tok, "Expected ':'"));
 
     parse_block(m->block);
-    parse_indent(0);
+    last_indent = parse_indent(0);
 }
 
 void Parser::parse_argument_list(shared_ptr<NArgumentList>& l)
