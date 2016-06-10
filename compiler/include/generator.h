@@ -64,9 +64,8 @@ public:
     void Visit(NArgumentList* o);
     void Visit(NParameterDeclaration* pd);
     void Visit(NMethod* m);
-    void Visit(NObjVariableDeclaration* v);
+    void Visit(NVariableDeclaration* v);
     void Visit(NString* s);
-    void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
     void Visit(NBrackets* b);
     void Visit(NIfElse* ie);
@@ -76,6 +75,7 @@ public:
     void Visit(NControl* c);
     void Visit(NDot* d);
     void Visit(NClass* c);
+    void Visit(NShared* s);
 
     string header;
     string source;
@@ -90,6 +90,7 @@ private:
 
     bool generate_auto = true; //if true, prints out auto instead of full type name
     bool generate_decl = false;
+    bool var_found = false;
 };
 
 

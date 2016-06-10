@@ -237,6 +237,8 @@ Token Lexer::get_token()
                 return Token("ref", i, line, col);
             else if(i == "extern")
                 return Token("extern", i, line, col);
+            else if(i == "extern_header")
+                return Token("extern_header", i, line, col);
             else if(i == "or")
                 return Token("or", i, line, col);
             else if(i == "and")
@@ -265,8 +267,8 @@ Token Lexer::get_token()
                 return Token("out", i, line, col);
             else if(i == "shared")
                 return Token("shared", i, line, col);
-            else if(i == "clone")
-                return Token("clone", i, line, col);
+            else if(i == "copy")
+                return Token("copy", i, line, col);
             else if(i == "class")
                 return Token("class", i, line, col);
             else if(i == "pass")

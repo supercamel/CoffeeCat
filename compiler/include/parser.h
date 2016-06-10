@@ -50,8 +50,6 @@ public:
     void parse_control_statement(shared_ptr<NControl>& c);
 
     void parse_declaration(shared_ptr<NVariableDeclaration>& v);
-    void parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& v);
-    void parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& a);
 
     void parse_argument_list(shared_ptr<NArgumentList>& l);
     void parse_parameter_declaration(shared_ptr<NParameterDeclaration>& p);
@@ -71,6 +69,7 @@ public:
     void parse_additive_expression(shared_ptr<NExpression>& expr);
     void parse_multiplicative_expression(shared_ptr<NExpression>& expr);
     void parse_unary_expression(shared_ptr<NExpression>& expr);
+    void parse_shared_expression(shared_ptr<NExpression>& expr);
     void parse_primary_expression(shared_ptr<NExpression>& np);
 
     void parse_brackets(shared_ptr<NExpression>& b);

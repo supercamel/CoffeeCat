@@ -249,12 +249,16 @@ void Generator::Visit(NParameterDeclaration* pd)
     if(pd->output)
     {
         s = pd->type;
+        if(s == "auto")
+            var_found = true;
         s += "& ";
         s += pd->handle;
     }
     else if(pd->clone)
     {
         s = pd->type;
+        if(s == "auto")
+            var_found = true;
         s += " ";
         s += pd->handle;
     }
@@ -262,6 +266,8 @@ void Generator::Visit(NParameterDeclaration* pd)
     {
         s = "const ";
         s += pd->type;
+        if(s == "auto")
+            var_found = true;
         s += "& ";
         s += pd->handle;
     }
@@ -324,11 +330,20 @@ void Generator::Visit(NMethod* m)
 {
     if(generate_decl)
     {
+        var_found = false;
+        auto s = source;
+        auto h = header;
+        m->args->Accept(this);
+        source = s;
+        header = h;
+
         string dec;
+        if(!var_found)
+            dec += "virtual ";
         if(in_class.size())
         {
             if((m->foo_name[0] != '~') && (m->foo_name != in_class.back()))
-               dec = m->return_type;
+               dec += m->return_type;
         }
         else
             dec = m->return_type;
@@ -374,50 +389,32 @@ void Generator::Visit(NMethod* m)
     }
 }
 
-void Generator::Visit(NObjVariableDeclaration* v)
+void Generator::Visit(NVariableDeclaration* v)
 {
     if(v->global)
     {
         header += "extern ";
         header += v->type + " ";
         header += v->handle + ";\n";
-    }
 
-    if(generate_auto)
-        source += "auto";
-    else
         source += v->type;
+    }
+    else
+    {
+        string type = v->type;
+        if(generate_auto)
+        {
+            if(type == "var")
+                type = "auto";
+        }
+        source += type;
+    }
 
     source += " ";
     source += v->handle;
     source += " = ";
-    if(v->copyable)
-    {
-        if(v->pool_size)
-        {
-            source += "etk::make_pool_ptr<";
-            source += to_string(v->pool_size);
-            source += ", ";
-            source += v->type;
-            source += ">(";
-            source += v->pool;
-            source += ", ";
-            v->list->Accept(this);
-            source += ")";
-            return;
-        }
-        else
-        {
-            source += "etk::make_smart_ptr<";
-            source += v->type;
-            source += ">";
-        }
-    }
-    else
-        source += v->type;
-    source += "(";
-    v->list->Accept(this);
-    source += ")";
+
+    v->initialiser->Accept(this);
 
 }
 
@@ -428,24 +425,22 @@ void Generator::Visit(NString* s)
     source += "\"";
 }
 
-void Generator::Visit(NAtomicVariableDeclaration* a)
-{
-    source += a->type;
-    source += " ";
-    source += a->handle;
-    source += " = ";
-    a->initialiser->Accept(this);
-}
-
 void Generator::Visit(NExtern* e)
 {
-    source += e->code;
+    if(e->header)
+    {
+        header += e->code;
+        header += "\n";
+    }
+    else
+        source += e->code;
 }
 
 void Generator::Visit(NBrackets* b)
 {
     source += "(";
-    (*b->subexpr.begin())->Accept(this);
+    if((*b->subexpr.begin()))
+        (*b->subexpr.begin())->Accept(this);
     source += ")";
 }
 
@@ -503,6 +498,30 @@ void Generator::Visit(NDot* d)
     else
         source += ".";
     (*i)->Accept(this);
+}
+
+void Generator::Visit(NShared* s)
+{
+    //make_pool_ptr<Object>(pool);
+    source += "make_pool_ptr<";
+    source += s->type;
+    source += ">(";
+    source += s->pool_ident;
+
+    if(s->args)
+    {
+        auto src = source;
+        source = "";
+        s->args->Accept(this);
+        if(source.length())
+        {
+            src += ", ";
+            src += source;
+        }
+        source = src;
+    }
+
+    source += ")";
 }
 
 void Generator::print_block_depth()

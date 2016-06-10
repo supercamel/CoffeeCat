@@ -233,6 +233,20 @@ public:
     }
 
     string code;
+    bool header = false;
+};
+
+class NShared : public NExpression
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+
+    string type;
+    string pool_ident;
+    shared_ptr<NExpressionList> args;
 };
 
 class NBrackets : public NExpression
@@ -325,38 +339,13 @@ public:
     }
 
     bool global = false;
-    string pool;
-    int pool_size = 0;
-};
-
-class NAtomicVariableDeclaration : public NVariableDeclaration
-{
-public:
+    bool is_auto = false;
     string type;
     string handle;
 
     shared_ptr<NExpression> initialiser = nullptr;
-
-    virtual void Accept(TreeWalker* t)
-    {
-        t->Visit(this);
-    }
 };
 
-class NObjVariableDeclaration : public NVariableDeclaration
-{
-public:
-    string type;
-    string handle;
-
-    shared_ptr<NExpressionList> list = nullptr;
-    bool copyable = false;
-
-    virtual void Accept(TreeWalker* t)
-    {
-        t->Visit(this);
-    }
-};
 
 class NMethodCall : public NExpression
 {

@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-o ./out test.cof" />
+				<Option parameters="-o ./ main.cof walker.cof" />
 				<Compiler>
 					<Add option="-g" />
 					<Add directory="include" />

@@ -184,19 +184,6 @@ void Printer::Visit(NMethodCall* m)
     block_depth--;
 }
 
-void Printer::Visit(NObjVariableDeclaration* v)
-{
-    print_block();
-    if(v->copyable)
-        cout << "Copyable ";
-    cout << "Variable declaration " << v->type << " " << v->handle << endl;
-    print_block();
-
-    cout << "Args" << endl;
-    block_depth++;
-    v->list->Accept(this);
-    block_depth--;
-}
 
 void Printer::Visit(NArgumentList* a)
 {
@@ -214,16 +201,6 @@ void Printer::Visit(NParameterDeclaration* pd)
     cout << "Parameter declaration ";
     cout << pd->type << " ";
     cout << pd->handle << endl;
-}
-
-void Printer::Visit(NAtomicVariableDeclaration* a)
-{
-    print_block();
-    cout << "Atomic declaration ";
-    cout << a->type << " " << a->handle << endl;
-    block_depth++;
-    a->initialiser->Accept(this);
-    block_depth--;
 }
 
 void Printer::Visit(NMethod* m)

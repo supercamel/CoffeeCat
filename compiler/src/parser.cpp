@@ -149,6 +149,12 @@ void Parser::parse_class(shared_ptr<NClass>& c)
             lexer = l;
         }
 
+        if(lexer.lex(true).tok == "pass")
+        {
+            lexer.lex();
+            goto newline;
+        }
+
         throw ParseError(lexer.lex(), "Parse error");
         newline:
 
@@ -194,7 +200,7 @@ void Parser::parse_method(shared_ptr<NMethod>& m)
     }
     tok = lexer.lex();
     if(tok.tok != ":")
-        throw(ParseError(tok, "Expected ':'"));
+        throw(ParseError(tok, "Expected ':' after method declaration"));
 
     parse_block(m->block);
     last_indent = parse_indent(0);
@@ -229,12 +235,12 @@ void Parser::parse_parameter_declaration(shared_ptr<NParameterDeclaration>& d)
     auto tok = lexer.lex();
     if((tok.tok != "identifier") && (tok.tok != "var"))
     {
-        if((tok.tok != "in") && (tok.tok != "out") && (tok.tok != "clone"))
+        if((tok.tok != "in") && (tok.tok != "out") && (tok.tok != "copy"))
             throw(backtrack());
 
         if(tok.tok == "out")
             d->output = true;
-        if(tok.tok == "clone")
+        if(tok.tok == "copy")
             d->clone = true;
 
         tok = lexer.lex();
@@ -511,24 +517,16 @@ void Parser::parse_for_statement(shared_ptr<NFor>& f)
     Lexer l = lexer;
     try
     {
-        auto n = make_shared<NMethodCall>();
-        parse_method_call(n);
+        auto n = make_shared<NExpression>();
+        parse_expression(n);
         f->rhs = static_pointer_cast<NExpression>(n);
     }
     catch(backtrack bt)
     {
-        lexer = l;
-        try
-        {
-            auto i = make_shared<NIdentifier>();
-            parse_identifier(i);
-            f->rhs = static_pointer_cast<NExpression>(i);
-        }
-        catch(backtrack bt)
-        { throw ParseError(lexer.lex(), "Expected a method call or an identifier after 'in'"); }
+        { throw ParseError(lexer.lex(), "Expected an expression after 'in'"); }
     }
     if(lexer.lex().tok != ":")
-        throw ParseError(lexer.lex(), "Expected ':'");
+        throw ParseError(lexer.lex(), "Expected ':' after for statement");
 
     f->block = make_shared<NBlock>();
     parse_block(*f->block);
@@ -551,32 +549,67 @@ void Parser::parse_control_statement(shared_ptr<NControl>& c)
 
 void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
 {
-    Lexer l = lexer;
+    auto tok = lexer.lex();
+    if((tok.tok != "identifier") && (tok.tok != "var"))
+        throw(backtrack());
+    if((!variable_is_atomic(tok.raw)) && (tok.tok != "var"))
+        throw(backtrack());
+    v->type = tok.raw;
+    if(tok.tok == "var")
+        v->type = "auto";
+    tok = lexer.lex();
+    if(tok.tok != "identifier")
+        throw(ParseError(tok, "Expected identifier after type keyword"));
+    v->handle = tok.raw;
+    tok = lexer.lex();
+    if(tok.tok != "=")
+        throw(ParseError(tok, "Expected assignment operator for variable declaration"));
+
+    auto l = lexer;
     try
     {
-        auto d = make_shared<NObjVariableDeclaration>();
-        parse_variable_declaration(d);
-        v = d;
-        return;
+        if(lexer.lex(true).raw == "shared")
+        {
+            auto d = make_shared<NExpression>();
+            parse_shared_expression(d);
+            v->type = "pool_pointer<";
+            v->type += ((NShared*)&(*d))->type;
+            v->type += ">";
+            v->initialiser = d;
+            return;
+        }
+        else
+        {
+            try
+            {
+                auto id = make_shared<NIdentifier>();
+                auto n = make_shared<NExpression>();
+
+                parse_identifier(id);
+                lexer = l;
+                parse_expression(n);
+
+                v->initialiser = n;
+                if(!variable_is_atomic(v->type))
+                    v->type = id->ident;
+            }
+            catch(backtrack bt)
+            {
+                lexer = l;
+                auto n = make_shared<NExpression>();
+                parse_expression(n);
+                v->initialiser = n;
+            }
+        }
     }
     catch(backtrack b)
     {
         lexer = l;
+        throw(ParseError(tok, "Error parsing declaration initialiser"));
     }
-    try
-    {
-        auto a = make_shared<NAtomicVariableDeclaration>();
-        parse_atomic_declaration(a);
-        v = a;
-        return;
-    }
-    catch(backtrack b)
-    {
-        lexer = l;
-    }
-    throw(backtrack());
 }
 
+/*
 void Parser::parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& vd)
 {
     auto tok = lexer.lex();
@@ -603,7 +636,7 @@ void Parser::parse_atomic_declaration(shared_ptr<NAtomicVariableDeclaration>& vd
         throw(ParseError(tok, "Error parsing atomic declaration initialiser"));
     }
 }
-
+/*
 void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
 {
     auto tok = lexer.lex();
@@ -616,6 +649,7 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
     tok = lexer.lex();
     if(tok.tok != "=")
         throw(ParseError(tok, "Expected assignment operator for variable declaration"));
+
 
     if(lexer.lex(true).tok == "shared")
     {
@@ -649,6 +683,7 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
     {
         throw(ParseError(tok, "Expected identifier"));
     }
+
     try
     {
         auto n = make_shared<NExpressionList>();
@@ -660,6 +695,7 @@ void Parser::parse_variable_declaration(shared_ptr<NObjVariableDeclaration>& vd)
         throw(ParseError(tok, "Error parsing initialiser expression list"));
     }
 }
+*/
 
 void Parser::parse_expression(shared_ptr<NExpression>& e)
 {
@@ -1002,7 +1038,7 @@ void Parser::parse_unary_expression(shared_ptr<NExpression>& expr)
         else
             throw(backtrack());
         shared_ptr<NExpression> rhs = make_shared<NExpression>();
-        parse_primary_expression(rhs);
+        parse_shared_expression(rhs);
         auto bino = make_shared<NUnaryOperator>();
         bino->subexpr.push_back(rhs);
         bino->op = op;
@@ -1010,6 +1046,59 @@ void Parser::parse_unary_expression(shared_ptr<NExpression>& expr)
         shared_ptr<NExpression> tino = static_pointer_cast<NExpression>(bino);
         check_precedence(tino);
         expr = tino;
+        return;
+    }
+    catch(backtrack bt)
+    {
+        lexer = l;
+    }
+
+    try
+    {
+        return parse_shared_expression(expr);
+    }
+    catch(backtrack bt)
+    {
+        lexer = l;
+    }
+    throw(backtrack());
+}
+
+void Parser::parse_shared_expression(shared_ptr<NExpression>& expr)
+{
+    Lexer l = lexer;
+
+    auto t = lexer.lex();
+    try
+    {
+        if(t.tok != "shared")
+            throw(backtrack());
+
+        auto ns = make_shared<NShared>();
+
+        t = lexer.lex();
+        if(t.tok != "<")
+            throw(ParseError(t, "Expected '<' after shared"));
+        auto id = lexer.lex();
+        if(id.tok != "identifier")
+            throw(ParseError(t, "Expected identifier as first parameter to 'shared'"));
+        ns->type = id.raw;
+        t = lexer.lex();
+        if(t.tok != ",")
+            throw(ParseError(t, "Expected ',' after shared<identifier"));
+        t = lexer.lex();
+        if(t.tok != "identifier")
+            throw(ParseError(t, "Expected identifier as second parameter to 'shared'"));
+        ns->pool_ident = t.raw;
+        t = lexer.lex();
+        if(t.tok != ">")
+            throw(ParseError(t, "Expected '>' after shared"));
+
+
+        ns->args = make_shared<NExpressionList>();
+        parse_expression_list(ns->args);
+
+        expr = ns;
         return;
     }
     catch(backtrack bt)
@@ -1165,15 +1254,18 @@ void Parser::parse_dot_list(shared_ptr<NExpression>& dlist)
 
 void Parser::parse_brackets(shared_ptr<NExpression>& b)
 {
+    auto br = make_shared<NBrackets>();
     if(lexer.lex().tok != "(")
         throw(backtrack());
-    auto br = make_shared<NBrackets>();
-    auto sub = make_shared<NExpression>();
-    parse_expression(sub);
-    br->subexpr.push_back(sub);
+    if(lexer.lex(true).tok != ")")
+    {
+        auto sub = make_shared<NExpression>();
+        parse_expression(sub);
+        br->subexpr.push_back(sub);
+        br->precedence = 100;
+    }
     if(lexer.lex().tok != ")")
         throw(backtrack());
-    br->precedence = 100;
     b = static_pointer_cast<NExpression>(br);
 }
 
@@ -1288,8 +1380,39 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         id->ident += ">";
         return;
     }
+    else if(tok.raw == "static_cast")
+    {
+        lexer.lex();
+        if(lexer.lex().tok != "<")
+            throw(ParseError(tok, "Expected '<' after static_cast"));
+        tok = lexer.lex();
+        if(tok.tok != "identifier")
+            throw(ParseError(tok, "Expected identifier as first parameter to static_cast."));
+        string type = tok.raw;
+        if(lexer.lex().tok != ",")
+            throw(ParseError(tok, "Expected ','"));
+        tok = lexer.lex();
+        if(tok.tok != "identifier")
+            throw(ParseError(tok, "Expected variable as second argument to static_cast"));
+        string v = tok.raw;
+        if(lexer.lex().tok != ">")
+            throw(ParseError(tok, "Expected '>'"));
+
+        //pool_pointer<Node>(rh.get_pool(), static_cast<Node*>(&(*rhs)));
+        id->ident = "pool_pointer<";
+        id->ident += type;
+        id->ident += ">(";
+        id->ident += v + ".get_pool(), static_cast<";
+        id->ident += type + "*>(&(*";
+        id->ident += v + ")))";
+        return;
+    }
+
     lexer.lex();
-    id->ident = tok.raw;
+    if(tok.raw == "this")
+        id->ident = "(*this)";
+    else
+        id->ident = tok.raw;
 }
 
 void Parser::parse_float(shared_ptr<NFloatLiteral>& f)
@@ -1317,11 +1440,11 @@ void Parser::parse_boolean(shared_ptr<NBoolLiteral>& b)
 
 void Parser::parse_method_call(shared_ptr<NMethodCall>& mc)
 {
-    auto tok = lexer.lex();
-    if(tok.tok != "identifier")
-        throw(backtrack());
+    auto ident = make_shared<NIdentifier>();
+    parse_identifier(ident);
+
     auto el = make_shared<NExpressionList>();
-    mc->handle = tok.raw;
+    mc->handle = ident->ident;
     mc->list = el;
     parse_expression_list(mc->list);
 }
@@ -1338,8 +1461,11 @@ void Parser::parse_string(shared_ptr<NString>& s)
 void Parser::parse_extern(shared_ptr<NExtern>& e)
 {
     auto tok = lexer.lex(true);
-    if(tok.tok != "extern")
+    if((tok.tok != "extern") && (tok.tok != "extern_header"))
         throw(backtrack());
+
+    if(tok.tok == "extern_header")
+        e->header = true;
     lexer.lex();
     tok = lexer.lex();
     if(tok.tok != "(")

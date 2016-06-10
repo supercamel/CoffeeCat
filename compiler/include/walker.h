@@ -21,8 +21,6 @@ public:
 	virtual void Visit(class NBlock* o) { unused(o); }
 	virtual void Visit(class NMethod* o) { unused(o); }
 	virtual void Visit(class NVariableDeclaration* o) { unused(o); }
-	virtual void Visit(class NObjVariableDeclaration* o) { unused(o); }
-	virtual void Visit(class NAtomicVariableDeclaration* o) { unused(o); }
 	virtual void Visit(class NExpressionList* o) { unused(o); }
 	virtual void Visit(class NMethodCall* o) { unused(o); }
 	virtual void Visit(class NParameterDeclaration* o) { unused(o); }
@@ -37,6 +35,7 @@ public:
 	virtual void Visit(class NFor* f) { unused(f); }
 	virtual void Visit(class NDot* d) { unused(d); }
 	virtual void Visit(class NClass* c) { unused(c); }
+	virtual void Visit(class NShared* s) { unused(s); }
 };
 
 

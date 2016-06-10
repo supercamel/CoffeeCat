@@ -19,8 +19,6 @@ public:
     void Visit(NArgumentList* o);
     void Visit(NParameterDeclaration* pd);
     void Visit(NMethod* m);
-    void Visit(NObjVariableDeclaration* v);
-    void Visit(NAtomicVariableDeclaration* a);
     void Visit(NExtern* e);
     void Visit(NBrackets* b);
     void Visit(NIfElse* ie);
