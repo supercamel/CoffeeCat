@@ -39,6 +39,7 @@ enum Weight:
 	//oh, look at that! CoffeeCat has built in functions that can convert between many kinds of units
 	//These unit conversion functions are from ETK
 	// https://github.com/supercamel/EmbeddedToolKit/blob/master/inc/etk/conversions.h
+	
 	float to_grams(float v):
 		if(value == GRAM):
 			return v
@@ -74,7 +75,7 @@ int main():
 	
 	var measurement = io.get_line().atof()
 	
-	o.value = o.INVALID
+	o = o.INVALID
 	while(o == o.INVALID):
 		io.print("Enter output units: ")
 		o.from_string(io.get_line())
