@@ -390,4 +390,19 @@ public:
 };
 
 
+class NEnum : public Node
+{
+public:
+    string handle;
+    vector<string> numbers;
+    vector<shared_ptr<NMethod>> methods;
+
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+};
+
+
+
 #endif // NODES_H

@@ -1,7 +1,0 @@
-
-
-int main():
-	var pool = Pool<1024>()
-	var arr = shared<pool, 1024> Array<int, 10>()
-	arr->at(5) = 10
-	io.print(arr->at(5), "\n")

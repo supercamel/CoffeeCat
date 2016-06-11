@@ -63,6 +63,18 @@ void Parser::parse_top_level(NBlock& block)
         lexer = l;
     }
 
+    try
+    {
+        auto n = make_shared<NEnum>();
+        parse_enum(n);
+        block.items.push_back(n);
+        return;
+    }
+    catch(backtrack bte)
+    {
+        lexer = l;
+    }
+
     if(lexer.lex(true).tok == "global")
     {
         lexer.lex();
@@ -168,13 +180,90 @@ void Parser::parse_class(shared_ptr<NClass>& c)
 
 }
 
-void Parser::parse_method(shared_ptr<NMethod>& m)
+void Parser::parse_enum(shared_ptr<NEnum>& c)
 {
     auto tok = lexer.lex();
-    if(tok.tok != "identifier")
+    if(tok.tok != "enum")
         throw(backtrack());
-    m->return_type = tok.raw;
     tok = lexer.lex();
+    if(tok.tok != "identifier")
+        throw(ParseError(tok, "Expcted an identifier after enum keyword"));
+    c->handle = tok.raw;
+
+    tok = lexer.lex();
+    if(tok.tok != ":")
+        throw(ParseError(tok, "Expected ':' after enum declaration"));
+
+    tok = lexer.lex();
+    if(tok.tok != "newline")
+        throw(ParseError(tok, "Expected new line after ':'"));
+
+    indent++;
+    parse_indent(indent);
+
+    if(lexer.lex(true).tok != "(")
+        throw(ParseError(lexer.lex(), "Expected '(' on line after enum declaration"));
+    
+    lexer.lex();
+
+    while(true)
+    {
+        tok = lexer.lex(true);
+        if(tok.tok == "identifier")
+        {
+            c->numbers.push_back(tok.raw);
+            lexer.lex();
+
+            tok = lexer.lex();
+            if(tok.tok == ")")
+                break;
+            
+            if(tok.tok != "newline")
+                throw(ParseError(lexer.lex(), "Expected new line after identifier in enum list"));
+            parse_indent(indent);
+        }
+        else
+            throw(ParseError(lexer.lex(), "Expected identifier"));
+    }
+
+    int i = parse_indent(0);
+    if(i < indent)
+    {
+        indent--;
+        return;
+    }
+
+    while(true)
+    {
+        auto l = lexer;
+        try
+        {
+            auto m = make_shared<NMethod>();
+            parse_method(m);
+            c->methods.push_back(m);
+            if(last_indent < indent)
+            {
+                indent--;
+                return;
+            }
+            continue;
+        }
+        catch(backtrack b)
+        {
+            throw(ParseError(lexer.lex(), "Error parsing enum method"));
+        }
+    }
+
+}
+
+
+void Parser::parse_method(shared_ptr<NMethod>& m)
+{
+    auto id = make_shared<NIdentifier>();
+    parse_identifier(id, true);
+
+    m->return_type = id->ident;
+    auto tok = lexer.lex();
     m->foo_name = "";
 
     if(tok.tok == "~") //special case for destructors

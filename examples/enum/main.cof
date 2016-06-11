@@ -1,0 +1,82 @@
+/**
+ * Enums are a list of values that start at zero and count upwards.
+ * 
+ * In CoffeeCat, enums can have methods (but not member variables or sub-classes).
+ * Enum methods are an interesting way to encapsulate data. 
+ */
+
+enum Weight:
+	( GRAM
+	KILOGRAM
+	TONNE
+	POUND
+	INVALID )
+	
+	void from_string(copy var str):
+		str.to_lower()
+		if(str == "grams"):
+			value = GRAM
+		else if(str == "kilograms"):
+			value = KILOGRAM
+		else if(str == "tonnes"):
+			value = TONNE
+		else if(str == "pounds"):
+			value = POUND
+		else:
+			value = INVALID
+		
+	String<32> to_string():
+		if(value == GRAM):
+			return "Grams"
+		if(value == KILOGRAM):
+			return "Kilograms"
+		if(value == TONNE):
+			return "Tonnes"
+		if(value == POUND):
+			return "Pounds"
+		return "Invalid"
+	
+	float to_grams(float v):
+		if(value == GRAM):
+			return v
+		else if(value == KILOGRAM):
+			return kilograms_to_grams(v)
+		else if(value == TONNE):
+			return tonnes_to_grams(v)
+		else if(value == POUND):
+			return pounds_to_grams(v)
+		return 0.0
+	
+	float from_grams(float g):
+		if(value == GRAM):
+			return g
+		else if(value == KILOGRAM):
+			return grams_to_kilograms(g)
+		else if(value == TONNE):
+			return grams_to_tonnes(g)
+		else if(value == POUND):
+			return grams_to_pounds(g)
+		return 0.0
+	
+
+int main():
+	var e = Weight()
+	var o = Weight()
+	io.print("Enter input units: ")
+	e.from_string(io.get_line())
+	
+	var unit = e.to_string()
+	unit.to_lower()
+	io.print("Enter weight in ", unit, ": ")
+	
+	var measurement = io.get_line().atof()
+	
+	o.value = o.INVALID
+	while(o == o.INVALID):
+		io.print("Enter output units: ")
+		o.from_string(io.get_line())
+	
+	var result = o.from_grams(e.to_grams(measurement))
+	io.print("Weight in ", o.to_string(), " is ", result, "\n")
+	
+

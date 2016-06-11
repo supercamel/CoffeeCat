@@ -237,6 +237,8 @@ Token Lexer::get_token()
                 return Token("ref", i, line, col);
             else if(i == "extern")
                 return Token("extern", i, line, col);
+            else if(i == "enum")
+                return Token("enum", i, line, col);
             else if(i == "extern_header")
                 return Token("extern_header", i, line, col);
             else if(i == "or")

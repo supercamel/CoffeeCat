@@ -37,6 +37,7 @@ public:
 	virtual void Visit(class NDot* d) { unused(d); }
 	virtual void Visit(class NClass* c) { unused(c); }
 	virtual void Visit(class NShared* s) { unused(s); }
+	virtual void Visit(class NEnum* e) { unused(e); }
 };
 
 

@@ -1,8 +1,8 @@
 CC=g++-4.9
-CFLAGS=-c -Wall -Wextra -std=c++14 -O3 -I./cpp -I./
+CFLAGS=-c -Wall -Wextra -std=c++14 -O3 -I../
 LDFLAGS= -letk
 COFFEECAT=$(wildcard *.cof)
-SOURCES=$(patsubst %.cof,%.cpp,$(COFFEECAT)) $(wildcard ./stdlib/*.cpp)
+SOURCES=$(patsubst %.cof,%.cpp,$(COFFEECAT)) $(wildcard ../stdlib/*.cpp)
 OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES)) 
 EXECUTABLE=main
 

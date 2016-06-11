@@ -1,3 +1,17 @@
+/**
+ * A visitor pattern demo.
+ *
+ * When an object is created in CoffeeCat, it is placed on the stack and destroyed when it goes out of scope. 
+ * 
+ * CoffeeCat can also create objects in a memory pool using the shared<> key word. 
+ * This means the object will not be destroyed until it is no longer required, or until the entire memory pool itself is destroyed.
+ *
+ * There is a 'built-in' memory pool that pretty much all computers and micro-controllers have, and that is The Heap Of Doom.
+ * This particular example uses the heap. 
+ *
+ * Once a shared object has been created, it's members can be accesses using '->' instead of '.' just like a pointer in C++. 
+ * 
+ */
 
 extern_header("class Walker;")
 

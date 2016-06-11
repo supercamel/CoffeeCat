@@ -76,6 +76,7 @@ public:
     void Visit(NControl* c);
     void Visit(NDot* d);
     void Visit(NClass* c);
+    void Visit(NEnum* e);
     void Visit(NShared* s);
 
     string header;

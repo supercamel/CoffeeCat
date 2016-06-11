@@ -17,7 +17,7 @@ void Generator::generate(NBlock* block, string fname)
     header += "#define ";
     header += fname_upper;
     header += "_H\n\n";
-    header += "#include \"stdlib/print.h\"\n#include <etk/etk.h>\nusing namespace etk;\n";
+    header += "#include \"stdlib/print.h\"\n#include \"stdlib/enum.h\"\n#include <etk/etk.h>\nusing namespace etk;\n";
 
     source = "#include \"coffee_header.h\"\n\n";
 
@@ -273,13 +273,65 @@ void Generator::Visit(NParameterDeclaration* pd)
     {
         s = "const ";
         s += pd->type;
-        if(s == "auto")
+        if(s == "const auto")
             var_found = true;
         s += "& ";
         s += pd->handle;
     }
 
     source += s;
+}
+
+void Generator::Visit(NEnum* e)
+{
+    header += "class ";
+    header += e->handle;
+    header += " : public __Enum\n{\n\tpublic:\n\t\t";
+
+    header += e->handle;
+    header += "() { }\n\t\t";
+
+    header += e->handle;
+    header += "(const int q) { value = q; }\n\t\t";
+
+    auto s = source;
+    source = "";
+
+    in_class.push_back(e->handle);
+
+    auto h = header;
+    generate_decl = true;
+
+    for(auto m : e->methods)
+    {
+        //source += "virtual ";
+        m->Accept(this);
+    }
+
+    generate_decl = false;
+    header = h;
+
+    header += source;
+    source = "";
+    source = s;
+
+    for(auto m : e->methods)
+        m->Accept(this);
+
+    in_class.pop_back();
+
+    uint32_t count = 0;
+    for(auto& n : e->numbers)
+    {
+        header += "\t\tstatic const int ";
+        header += n;
+        header += " = ";
+        header += to_string(count++);
+        header += ";\n";
+    }
+
+
+    header += "};\n";
 }
 
 void Generator::Visit(NClass* c)
