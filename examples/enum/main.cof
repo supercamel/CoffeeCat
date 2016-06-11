@@ -36,6 +36,9 @@ enum Weight:
 			return "Pounds"
 		return "Invalid"
 	
+	//oh, look at that! CoffeeCat has built in functions that can convert between many kinds of units
+	//These unit conversion functions are from ETK
+	// https://github.com/supercamel/EmbeddedToolKit/blob/master/inc/etk/conversions.h
 	float to_grams(float v):
 		if(value == GRAM):
 			return v
