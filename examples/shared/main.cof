@@ -1,0 +1,40 @@
+
+extern_header("class Walker;")
+
+class Node:
+    void Accept(out Walker walker):
+        walker.Visit(this)
+        
+
+class INode: Node
+    void Accept(out Walker walker):
+        walker.Visit(this)
+    int value = 0
+
+class OpNode: Node
+    void Accept(out Walker walker):
+        walker.Visit(this)
+	
+	void set_lh(copy var lhs):
+		lh = static_cast<Node,lhs>
+	
+	void set_rh(copy var rhs):
+		rh = static_cast<Node,rhs>
+	
+    var lh = shared<Node, heap>()
+    var rh = shared<Node, heap>()
+    
+int main():
+    var i1 = shared<INode, heap>()
+    i1->value = 10
+    
+    var i2 = shared<INode, heap>()
+    i2->value = 5
+    
+    var on = OpNode()
+    
+    on.set_lh(i1)
+    on.set_rh(i2)
+    
+    var walker = Walker()
+    on.Accept(walker)

@@ -13,6 +13,7 @@ public:
 	virtual void Visit(class NExpression* o) { unused(o); }
 	virtual void Visit(class NFloatLiteral* o) { unused(o); }
 	virtual void Visit(class NIntegerLiteral* o) { unused(o); }
+	virtual void Visit(class NCharLiteral* c) { unused(c); }
 	virtual void Visit(class NBoolLiteral* o) { unused(o); }
 	virtual void Visit(class NIdentifier* o) { unused(o); }
 	virtual void Visit(class NString* s) { unused(s); }

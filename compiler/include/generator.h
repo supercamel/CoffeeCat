@@ -55,6 +55,7 @@ public:
     void Visit(NBlock* block);
     void Visit(NBinaryOperator* bo);
     void Visit(NIntegerLiteral* i);
+    void Visit(NCharLiteral* c);
     void Visit(NFloatLiteral* f);
     void Visit(NBoolLiteral* b);
     void Visit(NIdentifier* i);

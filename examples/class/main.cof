@@ -1,0 +1,26 @@
+
+class Object:
+	void Object():
+		io.print("Constructor\n")
+	
+	void ~Object():
+		io.print("Destructor\n")
+	
+	void set_property(int a):
+		this.property = a
+		property = a
+
+
+	int property = 10
+	var name = String<128>()
+
+
+int main():
+	var o = Object()
+	o.set_property(123)
+
+	o.name = "Hello world!\n"
+
+	io.print(o.name)
+	io.print(o.property)
+

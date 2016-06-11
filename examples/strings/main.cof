@@ -1,0 +1,45 @@
+
+void split(var str, out var ret):
+	var tok = make_tokeniser(str, ' ')
+	var s = String<64>()
+	while(tok.next(s, 64)):
+		ret.append(s)
+
+
+void scan(var str, out int param, out float setting):
+	var string = String<128>(str)
+	string.scan(param, setting)
+
+int string_to_int(var str):
+	var string = String<20>(str)
+	return string.atoi()
+
+void building_up_strings(out var s):
+	s = "Hello"
+	s += " world"
+	s += '!'
+	s += " "
+	s += 5.12
+	s += "\n"
+
+int main():
+	var l = List<String<64>, 10>()
+	split("Hello world!", out l)
+	for s in l:
+		io.print(s, " ")
+	io.print("\n")
+
+	int param = 0
+	float setting = 0.0
+	scan("Set 1 to 0.25", param, setting)
+
+	io.print("Set ", param, " to ", setting, "\n")
+
+	io.print(string_to_int("55"), "\n")
+
+	var sti = String<64>("55")
+	io.print(string_to_int(sti), "\n")
+
+	building_up_strings(sti)
+	io.print(sti)
+

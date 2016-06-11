@@ -74,7 +74,8 @@ public:
 
     void parse_brackets(shared_ptr<NExpression>& b);
     void parse_integer(shared_ptr<NIntegerLiteral>& ni);
-    void parse_identifier(shared_ptr<NIdentifier>& ni);
+    void parse_char(shared_ptr<NCharLiteral>& c);
+    void parse_identifier(shared_ptr<NIdentifier>& ni, bool can_be_atomic = false);
     void parse_float(shared_ptr<NFloatLiteral>& nf);
     void parse_boolean(shared_ptr<NBoolLiteral>& nf);
     void parse_string(shared_ptr<NString>& s);

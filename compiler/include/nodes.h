@@ -178,6 +178,18 @@ public:
     int64_t value;
 };
 
+class NCharLiteral : public NExpression
+{
+public:
+    virtual void Accept(TreeWalker* t)
+    {
+        t->Visit(this);
+    }
+    
+    string value;
+};
+
+
 class NFloatLiteral : public NExpression
 {
 public:
@@ -223,6 +235,8 @@ public:
 
     string str;
 };
+
+
 
 class NExtern : public NExpression
 {

@@ -163,6 +163,13 @@ void Generator::Visit(NIntegerLiteral* i)
     source += to_string(i->value);
 }
 
+void Generator::Visit(NCharLiteral* i)
+{
+    source += "'";
+    source += i->value;
+    source += "'";
+}
+
 void Generator::Visit(NFloatLiteral* f)
 {
     source += to_string(f->value);
@@ -353,7 +360,6 @@ void Generator::Visit(NMethod* m)
         dec += m->foo_name;
 
         source += dec;
-
         m->args->Accept(this);
         source += ";\n";
     }
@@ -379,11 +385,12 @@ void Generator::Visit(NMethod* m)
         auto s = source;
         source = "";
 
-        if(!in_class.size())
-            header += "(";
         m->args->Accept(this);
         if(!in_class.size())
-            header += ");\n";
+        {
+            header += source;
+            header += ";\n";
+        }
 
         m->block.Accept(this);
 

@@ -15,7 +15,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $< -o $@
 
 $(SOURCES): $(COFFEECAT) 
-	CoffeeCat -o ./ $(COFFEECAT)
+	ccat -o ./ $(COFFEECAT)
 	
 clean:
 	find . -name \*.o -execdir rm {} \;

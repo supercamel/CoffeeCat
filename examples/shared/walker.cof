@@ -1,0 +1,13 @@
+
+class Walker:
+	void Visit(out Node n):
+		io.print("node\n")
+		
+    void Visit(out OpNode n1):
+    	io.print("Adding\n")
+        n1.lh->Accept(this)
+        n1.rh->Accept(this)
+	
+	void Visit(out INode n):
+		io.print(n.value)
+		io.print("\n")

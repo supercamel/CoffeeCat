@@ -580,26 +580,25 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
         }
         else
         {
-            try
-            {
                 auto id = make_shared<NIdentifier>();
                 auto n = make_shared<NExpression>();
 
-                parse_identifier(id);
+                string ident = lexer.lex(true).raw;
+                try
+                {
+                    parse_identifier(id);
+                }
+                catch(...)
+                {
+
+                }
+                
                 lexer = l;
                 parse_expression(n);
 
                 v->initialiser = n;
-                if(!variable_is_atomic(v->type))
+                if((ident == "String") || (ident == "Pool") || (ident == "Array") || (ident == "List"))
                     v->type = id->ident;
-            }
-            catch(backtrack bt)
-            {
-                lexer = l;
-                auto n = make_shared<NExpression>();
-                parse_expression(n);
-                v->initialiser = n;
-            }
         }
     }
     catch(backtrack b)
@@ -1153,6 +1152,19 @@ void Parser::parse_primary_expression(shared_ptr<NExpression>& np)
     {
         lexer = l;
     }
+
+    try
+    {
+        auto ni = make_shared<NCharLiteral>();
+        parse_char(ni);
+        np = ni;
+        return;
+    }
+    catch(backtrack bt)
+    {
+        lexer = l;
+    }
+
     try
     {
         auto ni = make_shared<NIntegerLiteral>();
@@ -1275,14 +1287,24 @@ void Parser::parse_integer(shared_ptr<NIntegerLiteral>& ni)
 
     if(tok.tok == "int_literal")
         ni->value = stoi(tok.raw);
-    else if(tok.tok == "char_literal")
-        ni->value = tok.raw[0];
+    else
+        throw(backtrack());
+
+    lexer.lex();
+}
+
+void Parser::parse_char(shared_ptr<NCharLiteral>& c)
+{
+    auto tok = lexer.lex(true);
+
+    if(tok.tok == "char_literal")
+        c->value = tok.raw;
     else
         throw(backtrack());
     lexer.lex();
 }
 
-void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
+void Parser::parse_identifier(shared_ptr<NIdentifier>& id, bool can_be_atomic)
 {
     auto tok = lexer.lex(true);
     auto t = tok;
@@ -1302,7 +1324,7 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
 
     if(tok.tok != "identifier")
         throw(backtrack());
-    if(variable_is_atomic(tok.raw))
+    if((variable_is_atomic(tok.raw)) && (!can_be_atomic))
         throw(backtrack());
     if(tok.raw == "String")
     {
@@ -1339,10 +1361,19 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         lexer.lex();
         if(lexer.lex().tok != "<")
             throw(ParseError(tok, "Expected maximum array size to be declared."));
-        tok = lexer.lex();
-        if(tok.tok != "identifier")
-            throw(ParseError(tok, "Expected identifier"));
-        string type = tok.raw;
+
+        string type;
+        try
+        {
+            auto ident = make_shared<NIdentifier>();
+            parse_identifier(ident, true);
+            type = ident->ident;
+        }
+        catch(backtrack b)
+        {
+            throw(ParseError(lexer.lex(), "Expected identifier"));
+        }
+
         tok = lexer.lex();
         if(tok.tok != ",")
             throw(ParseError(tok, "Expected ','"));
@@ -1362,10 +1393,18 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id)
         lexer.lex();
         if(lexer.lex().tok != "<")
             throw(ParseError(tok, "Expected maximum list size to be declared."));
-        tok = lexer.lex();
-        if(tok.tok != "identifier")
-            throw(ParseError(tok, "Expected identifier"));
-        string type = tok.raw;
+                string type;
+        try
+        {
+            auto ident = make_shared<NIdentifier>();
+            parse_identifier(ident, true);
+            type = ident->ident;
+        }
+        catch(backtrack b)
+        {
+            throw(ParseError(lexer.lex(), "Expected identifier"));
+        }
+
         tok = lexer.lex();
         if(tok.tok != ",")
             throw(ParseError(tok, "Expected ','"));
