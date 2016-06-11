@@ -338,12 +338,14 @@ void Generator::Visit(NMethod* m)
         header = h;
 
         string dec;
-        if(!var_found)
-            dec += "virtual ";
         if(in_class.size())
         {
             if((m->foo_name[0] != '~') && (m->foo_name != in_class.back()))
+            {
+                if(!var_found)
+                    dec += "virtual ";
                dec += m->return_type;
+            }
         }
         else
             dec = m->return_type;
