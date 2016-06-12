@@ -383,16 +383,21 @@ string Lexer::read_string()
     while(text_pos < (text.length()-1))
     {
         next();
-        if(curc() == '\\') //reached an escape character
+        char c = curc();
+        if(c == '\\') //reached an escape character
         {
             next();
-            if(curc() == '"')
+            c = curc();
+            if(c == '"')
                 s += "\"";
             else
+            {
                 s += "\\";
+                s += c;
+            }
 
         }
-        else if(curc() == '"')
+        else if(c == '"')
         {
             next();
             return s;

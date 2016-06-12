@@ -934,7 +934,7 @@ void Parser::parse_relational_expression(shared_ptr<NExpression>& e)
         parse_binary_expression(e, {BO_LESS_THAN_EQUAL, BO_GREATER_THAN_EQUAL,
                                     BO_LESS_THAN, BO_GREATER_THAN
                                    },
-        {TOK_LESS_THAN_EQUAL, TOK_GREATER_THAN_EQUAL, TOK_GREATER_THAN, TOK_LESS_THAN}, 8,
+        {TOK_LESS_THAN_EQUAL, TOK_GREATER_THAN_EQUAL, TOK_LESS_THAN, TOK_GREATER_THAN}, 8,
         [&](shared_ptr<NExpression>& e)
         {
             parse_relational_expression(e);
@@ -1028,7 +1028,7 @@ void Parser::parse_multiplicative_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        parse_binary_expression(e, {BO_MULTIPLY, BO_DIVIDE}, {TOK_MUL, TOK_DIV}, 20,
+        parse_binary_expression(e, {BO_MULTIPLY, BO_DIVIDE, BO_MODULUS}, {TOK_MUL, TOK_DIV, TOK_MOD}, 20,
                                 [&](shared_ptr<NExpression>& e)
         {
             parse_multiplicative_expression(e);
@@ -1340,31 +1340,31 @@ void Parser::parse_identifier(shared_ptr<NIdentifier>& id, bool can_be_atomic)
     if(tok.raw == "String")
     {
         lexer.lex();
-        if(lexer.lex().tok != TOK_GREATER_THAN)
+        if(lexer.lex().tok != TOK_LESS_THAN)
             throw(ParseError(tok, "Expected maximum string length to be declared."));
         tok = lexer.lex();
         if((tok.tok != TOK_INT_LITERAL) && (tok.tok != TOK_IDENTIFIER))
             throw(ParseError(tok, "Expected an integer to specify maximum string length."));
-        if(lexer.lex().tok != TOK_LESS_THAN)
+        if(lexer.lex().tok != TOK_GREATER_THAN)
             throw(ParseError(tok, "Expected a '>' token after string length"));
         id->ident = "etk::StaticString<";
         id->ident += tok.raw;
-        id->ident += TOK_LESS_THAN;
+        id->ident += ">";
         return;
     }
     else if(tok.raw == "Pool")
     {
         lexer.lex();
-        if(lexer.lex().tok != TOK_GREATER_THAN)
+        if(lexer.lex().tok != TOK_LESS_THAN)
             throw(ParseError(tok, "Expected maximum pool size to be declared."));
         tok = lexer.lex();
         if((tok.tok != TOK_INT_LITERAL) && (tok.tok != TOK_IDENTIFIER))
             throw(ParseError(tok, "Expected an integer to specify maximum pool size."));
-        if(lexer.lex().tok != TOK_LESS_THAN)
+        if(lexer.lex().tok != TOK_GREATER_THAN)
             throw(ParseError(tok, "Expected a '>' token after pool size"));
         id->ident = "etk::Pool<";
         id->ident += tok.raw;
-        id->ident += TOK_LESS_THAN;
+        id->ident += ">";
         return;
     }
     else if(tok.raw == "Array")
