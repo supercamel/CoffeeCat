@@ -73,14 +73,14 @@ int main():
 	unit.to_lower()
 	io.print("Enter weight in ", unit, ": ")
 	
-	var measurement = io.get_line().atof()
+	float measurement = io.get_line().atof()
 	
 	o = o.INVALID
 	while(o == o.INVALID):
 		io.print("Enter output units: ")
 		o.from_string(io.get_line())
 	
-	var result = o.from_grams(e.to_grams(measurement))
+	float result = o.from_grams(e.to_grams(measurement))
 	io.print("Weight in ", o.to_string(), " is ", result, "\n")
 	
 

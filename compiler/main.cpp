@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <etk/etk.h>
+#include <chrono>
+#include <iomanip>
 
 #include "include/lexer.h"
 #include "include/parser.h"
@@ -11,6 +13,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     int pos = 1;
     string outpath = "./";
     vector<string> filenames;
@@ -111,6 +115,10 @@ int main(int argc, char *argv[])
 
     cofheader << "\n#endif\n";
     cofheader.close();
+
+    std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+
+    std::cout << "Success. " << std::setprecision(3) << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0 << " s" << std::endl;
 
     return 0;
 }

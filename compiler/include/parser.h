@@ -35,6 +35,11 @@ public:
     Parser(Lexer& lexer) : lexer(lexer) { }
     void parse(NBlock& node);
 
+    /*
+        Returns true if a variable name is atomic. ie int, float, double etc
+    */
+    static bool variable_is_atomic(string var);
+    
 //private:
     void parse_top_level(NBlock& block);
     void parse_method(shared_ptr<NMethod>& block);
@@ -98,15 +103,10 @@ public:
     */
     void parse_binary_expression(shared_ptr<NExpression>& e,
                                     vector<BINARY_OPERATOR> ops,
-                                    vector<string> toks, int precedence,
+                                    vector<TOKEN> toks, int precedence,
                                     std::function<void (shared_ptr<NExpression>& e)> recurse,
                                     std::function<void (shared_ptr<NExpression>& e)> subexpr);
     void check_precedence(shared_ptr<NExpression>& e);
-
-    /*
-        Returns true if a variable name is atomic. ie int, float, double etc
-    */
-    static bool variable_is_atomic(string var);
 
     Lexer& lexer;
     int indent = 0; //current indent level

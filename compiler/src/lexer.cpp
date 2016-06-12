@@ -34,24 +34,29 @@ Token Lexer::lex(bool peeking, int peak_ahead)
 Token Lexer::get_token()
 {
     string raw_tok;
+
+    restart:
     while(text_pos < text.length()-1)
     {
-        if(curc() == '\r')
+        switch(curc())
+        {
+        case '\r':
         {
             next();
-            continue;
+            goto restart;
         }
-        if(curc() == '\t')
+        case '\t':
         {
             next();
-            return Token("indent", "    ", line, col);
+            return Token(TOK_INDENT, "    ", line, col);
         }
-        if(curc() == '\n')
+        break;
+        case '\n':
         {
             next();
-            return Token("newline", "\n", line, col);
+            return Token(TOK_NEWLINE, "\n", line, col);
         }
-        if(curc() == ' ')
+        case ' ':
         {
             next();
             if(curc() == ' ')
@@ -63,245 +68,289 @@ Token Lexer::get_token()
                     if(curc() == ' ')
                     {
                         next();
-                        return Token("indent", "    ", line, col);
+                        return Token(TOK_INDENT, "    ", line, col);
                     }
                 }
             }
-            continue;
+            goto restart;
         }
+        break;
+        }
+
+
+
         raw_tok += curc();
-        if(curc() == '"')
+
+        switch(curc())
         {
+        case '"':
+        {
+
             string s = read_string();
-            return Token("string_literal", s, line, col);
+            return Token(TOK_STRING_LITERAL, s, line, col);
         }
-        else if(curc() == '\'')
+        case '\'':
         {
             string c = read_char();
-            return Token("char_literal", c, line, col);
+            return Token(TOK_CHAR_LITERAL, c, line, col);
         }
-        else if(curc() == '*')
-        {
-            next();
-            if(curc() == '=')
-                return Token("*=", raw_tok, line, col);
-            return Token("*", raw_tok, line, col);
-        }
-        else if(curc() == '/')
-        {
-            next();
-            if(curc() == '=')
-                return Token("/=", raw_tok, line, col);
-            if(curc() == '*')
-            {
-                block_comment();
-                continue;
-            }
-            if(curc() == '/')
-            {
-                line_comment();
-                continue;
-            }
-            return Token("/", raw_tok, line, col);
-        }
-        else if(curc() == '+')
+        case '*':
         {
             next();
             if(curc() == '=')
             {
                 next();
-                return Token("+=", raw_tok, line, col);
+                return Token(TOK_MUL_ASSIGN, line, col);
             }
-            return Token("+", raw_tok, line, col);
+            return Token(TOK_MUL, line, col);
         }
-        else if(curc() == '-')
+        case '/':
+        {
+            next();
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_DIV_ASSIGN, line, col);
+            }
+            if(curc() == '*')
+            {
+                block_comment();
+                goto restart;
+            }
+            if(curc() == '/')
+            {
+                line_comment();
+                goto restart;
+            }
+            return Token(TOK_DIV, line, col);
+        }
+        case '+':
+        {
+            next();
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_ADD_ASSIGN, line, col);
+            }
+            return Token(TOK_ADD, line, col);
+        }
+        case '-':
         {
             next();
             if(curc() == '>')
             {
                 next();
-                return Token("->", raw_tok, line, col);
+                return Token(TOK_POINTER_ACCESS, line, col);
             }
             if(curc() == '=')
             {
                 next();
-                return Token("-=", raw_tok, line, col);
+                return Token(TOK_SUB_ASSIGN, line, col);
             }
-            return Token("-", "-", line, col);
+            return Token(TOK_SUB, line, col);
         }
-        else if(curc() == '(')
+        case '(':
         {
             next();
-            return Token("(", raw_tok, line, col);
+            return Token(TOK_LH_BRACKET, line, col);
         }
-        else if(curc() == ')')
+        case ')':
         {
             next();
-            return Token(")", raw_tok, line, col);
+            return Token(TOK_RH_BRACKET, line, col);
         }
-        else if(curc() == ':')
+        case ':':
         {
             next();
-            return Token(":", raw_tok, line, col);
+            return Token(TOK_COLON, line, col);
         }
-        else if(curc() == '=')
-        {
-            next();
-            if(curc() == '=')
-            {
-                next();
-                return Token("==", raw_tok, line, col);
-            }
-            return Token("=", raw_tok, line, col);
-        }
-        else if(curc() == '!')
+        case '%':
         {
             next();
             if(curc() == '=')
             {
                 next();
-                return Token("!=", raw_tok, line, col);
+                return Token(TOK_MOD_ASSIGN, line, col);
+            }
+            return Token(TOK_MOD, line, col);
+        }
+        case '=':
+        {
+            next();
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_EQUAL, line, col);
+            }
+            return Token(TOK_ASSIGN, line, col);
+        }
+        case '!':
+        {
+            next();
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_NOT_EQUAL, line, col);
             }
             die("Unexpected character");
         }
-        else if(curc() == ',')
+        case  ',':
         {
             next();
-            return Token(",", raw_tok, line, col);
+            return Token(TOK_COMMA, line, col);
         }
-        else if(curc() == '<')
+        case '<':
         {
             next();
             if(curc() == '<')
             {
                 next();
-                return Token("<<", raw_tok, line, col);
+                if(curc() == '=')
+                {
+                    next();
+                    return Token(TOK_SHIFT_LEFT_ASSIGN, line, col);
+                }
+                return Token(TOK_SHIFT_LEFT, line, col);
             }
             if(curc() == '=')
             {
                 next();
-                return Token("<=", raw_tok, line, col);
+                return Token(TOK_LESS_THAN_EQUAL, line, col);
             }
-            return Token("<", raw_tok, line, col);
+            return Token(TOK_LESS_THAN, line, col);
         }
-        else if(curc() == '>')
+        case '>':
         {
             next();
             if(curc() == '>')
             {
                 next();
-                return Token(">>", raw_tok, line, col);
+                if(curc() == '=')
+                {
+                    next();
+                    return Token(TOK_SHIFT_RIGHT_ASSIGN, line, col);
+                }
+                return Token(TOK_SHIFT_RIGHT, line, col);
             }
             if(curc() == '=')
             {
                 next();
-                return Token(">=", raw_tok, line, col);
+                return Token(TOK_GREATER_THAN_EQUAL, line, col);
             }
-            return Token(">", raw_tok, line, col);
+            return Token(TOK_GREATER_THAN, line, col);
         }
-        else if(curc() == '.')
+        case '.':
         {
             next();
-            return Token(".", raw_tok, line, col);
+            return Token(TOK_DOT, line, col);
         }
-        else if(curc() == '|')
+        case '|':
         {
             next();
-            return Token("|", raw_tok, line, col);
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_BAR_ASSIGN, line, col);
+            }
+            return Token(TOK_BAR, line, col);
         }
-        else if(curc() == '^')
+        case '^':
         {
             next();
-            return Token("^", raw_tok, line, col);
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_CARET_ASSIGN, line, col);
+            }
+            return Token(TOK_CARET, line, col);
         }
-        else if(curc() == '&')
+        case '&':
         {
             next();
-            return Token("&", raw_tok, line, col);
+            if(curc() == '=')
+            {
+                next();
+                return Token(TOK_AMP_ASSIGN,  line, col);
+            }
+            return Token(TOK_AMP, line, col);
         }
-        else if(curc() == '~')
+        case '~':
         {
             next();
-            return Token("~", raw_tok, line, col);
+            return Token(TOK_TILDE, line, col);
         }
+        }
+
         if(isalpha(curc()))
         {
             string i = read_identifier();
             if(i == "true")
-                return Token("bool_literal", "true", line, col);
+                return Token(TOK_BOOL_LITERAL, "true", line, col);
             else if(i == "false")
-                return Token("bool_literal", "false", line, col);
+                return Token(TOK_BOOL_LITERAL, "false", line, col);
             else if(i == "var")
-                return Token("var", i, line, col);
-            else if(i == "ref")
-                return Token("ref", i, line, col);
+                return Token(TOK_VAR , line, col);
             else if(i == "extern")
-                return Token("extern", i, line, col);
+                return Token(TOK_EXTERN, line, col);
             else if(i == "enum")
-                return Token("enum", i, line, col);
+                return Token(TOK_ENUM, line, col);
             else if(i == "extern_header")
-                return Token("extern_header", i, line, col);
+                return Token(TOK_EXTERN_HEADER, line, col);
             else if(i == "or")
-                return Token("or", i, line, col);
+                return Token(TOK_OR, line, col);
             else if(i == "and")
-                return Token("and", i, line, col);
+                return Token(TOK_AND, line, col);
             else if(i == "not")
-                return Token("not", i, line, col);
+                return Token(TOK_NOT, line, col);
             else if(i == "if")
-                return Token("if", i, line, col);
+                return Token(TOK_IF, line, col);
             else if(i == "else")
-                return Token("else", i, line, col);
+                return Token(TOK_ELSE, line, col);
             else if(i == "return")
-                return Token("return", i, line, col);
+                return Token(TOK_RETURN, line, col);
             else if(i == "while")
-                return Token("while", i, line, col);
+                return Token(TOK_WHILE, line, col);
             else if(i == "break")
-                return Token("break", i, line, col);
+                return Token(TOK_BREAK, line, col);
             else if(i == "continue")
-                return Token("continue", i, line, col);
+                return Token(TOK_CONTINUE, line, col);
             else if(i == "for")
-                return Token("for", i, line, col);
+                return Token(TOK_FOR, line, col);
             else if(i == "in")
-                return Token("in", i, line, col);
+                return Token(TOK_IN, line, col);
             else if(i == "global")
-                return Token("global", i, line, col);
+                return Token(TOK_GLOBAL, line, col);
             else if(i == "out")
-                return Token("out", i, line, col);
+                return Token(TOK_OUT, line, col);
             else if(i == "shared")
-                return Token("shared", i, line, col);
+                return Token(TOK_SHARED, line, col);
             else if(i == "copy")
-                return Token("copy", i, line, col);
+                return Token(TOK_COPY, line, col);
             else if(i == "class")
-                return Token("class", i, line, col);
+                return Token(TOK_CLASS, line, col);
             else if(i == "pass")
-                return Token("pass", i, line, col);
+                return Token(TOK_PASS, line, col);
             else
-                return Token("identifier", i, line, col);
+                return Token(TOK_IDENTIFIER, i, line, col);
         }
         if(isdigit(curc()))
         {
             numeric_const n = read_numeric_const();
-            if(n.type == "float")
-                return Token("float_literal", n.val, line, col);
-            else if(n.type == "int")
-                return Token("int_literal", n.val, line, col);
+            if(n.is_float)
+                return Token(TOK_FLOAT_LITERAL, n.val, line, col);
             else
-                die("Strange looking number.");
+                return Token(TOK_INT_LITERAL, n.val, line, col);
         }
         string msg = "Unexpected character ";
         msg += curc();
         die(msg);
     }
-    return Token("eof", "", line, col);
+    return Token(TOK_EOF, "", line, col);
 }
 
 void Lexer::next()
 {
     text_pos++;
-    if(text[text_pos] > 127)
-        die("Invalid character");
-    if(text[text_pos] == '\0')
-        die("Unexpected NULL character");
     if(curc() == '\n')
     {
         col = 0;
@@ -336,6 +385,7 @@ string Lexer::read_string()
         next();
         if(curc() == '\\') //reached an escape character
         {
+            next();
             if(curc() == '"')
                 s += "\"";
             else
@@ -378,7 +428,7 @@ numeric_const Lexer::read_numeric_const()
 {
     numeric_const nc;
     nc.val += curc();
-    nc.type = "int";
+    nc.is_float = false;
     while(text_pos < (text.length()-1))
     {
         next();
@@ -386,20 +436,16 @@ numeric_const Lexer::read_numeric_const()
         {
             if(curc() == '.')
             {
-                if(nc.type == "float")
+                if(nc.is_float)
                     die("Multiple decimal marks found in floating point literal.");
-                nc.type = "float";
+                nc.is_float = true;
             }
             else if(curc() == '\'')
             {
                 //ignore
             }
             else
-            {
-                if(nc.type != "float")
-                    nc.type = "int";
                 return nc;
-            }
         }
         nc.val += curc();
     }
@@ -422,15 +468,18 @@ void Lexer::line_comment()
 
 string Lexer::read_identifier()
 {
-    string s = "";
-    s += curc();
+    char s[128];
+    s[0] = curc();
+    int count = 0;
     while(text_pos < (text.length()-1))
     {
         next();
         if(!(isalpha(curc())) && (!isdigit(curc())) && (curc() != '_'))
+        {
+            s[++count] = '\0';
             return s;
-        else
-            s += curc();
+        }
+        s[++count] = curc();
     }
     die("Unexpected end of file.");
     return s;

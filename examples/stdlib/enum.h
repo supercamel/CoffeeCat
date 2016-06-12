@@ -22,6 +22,7 @@ struct __Enum
 	bool operator<=(const int q) { return value<=q; }
 	bool operator>=(const int q) { return value>=q; }
 
+
 	virtual void inc(const int i = 1) { value += i; }
 	virtual void dec(const int i = 1) { value -= i; }
 

@@ -5,7 +5,11 @@
 #include <memory>
 #include <list>
 
-#define unused(expr) (void)(expr)
+#include <etk/etk.h>
+
+//#define unused(expr) (void)(expr)
+
+using namespace etk;
 
 class TreeWalker
 {

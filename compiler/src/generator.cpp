@@ -1,4 +1,5 @@
 #include "generator.h"
+#include "parser.h"
 #include <algorithm>
 
 Generator::Generator()
@@ -465,7 +466,7 @@ void Generator::Visit(NVariableDeclaration* v)
         string type = v->type;
         if(generate_auto)
         {
-            if(type == "var")
+            if(!Parser::variable_is_atomic(type))
                 type = "auto";
         }
         source += type;
@@ -521,10 +522,13 @@ void Generator::Visit(NIfElse* ie)
 
 void Generator::Visit(NReturn* r)
 {
-    source += "return(";
+    source += "return";
     if(r->expr)
+    {
+        source += "(";
         r->expr->Accept(this);
-    source += ")";
+        source += ")";
+    }
 }
 
 void Generator::Visit(NWhile* w)
