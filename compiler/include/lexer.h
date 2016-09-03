@@ -1,7 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <etk/etk.h>
+//#include <etk/etk.h>
 #include <string>
 #include <iostream>
 using namespace std;
@@ -84,7 +84,7 @@ enum TOKEN
 struct Token
 {
 
-    Token(TOKEN tok, auto& raw, int line, int col) :
+    Token(TOKEN tok, string raw, int line, int col) :
         tok(tok), raw(raw), line(line), col(col)
     { }
 
@@ -104,8 +104,8 @@ struct Token
 
 struct numeric_const
 {
-	bool is_float = false;
-	string val = "";
+    bool is_float = false;
+    string val = "";
 };
 
 
@@ -117,7 +117,9 @@ public:
 
     Token lex(bool peeking = false, int peek_ahead = 0);
 private:
-    inline char curc() { return text[text_pos]; }
+    inline char curc() {
+        return text[text_pos];
+    }
     Token get_token();
     void next();
     void block_comment();

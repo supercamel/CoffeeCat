@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include <cctype>
+#include <vector>
 
 Lexer::Lexer(string& text) : text(text)
 {
@@ -418,8 +419,6 @@ string Lexer::read_char()
         if(curc() == '\'')
         {
             next();
-            if(s.length() != 1)
-                die("Invalid character.");
             return s;
         }
         else
@@ -434,23 +433,40 @@ numeric_const Lexer::read_numeric_const()
     numeric_const nc;
     nc.val += curc();
     nc.is_float = false;
+    
+    std::vector<char> allowed_chars;
+    
+    if((curc() == '0') && (text[text_pos+1] == 'x'))
+    {
+    	next();
+    	nc.val = "0x";
+    	allowed_chars = {'A', 'B', 'C', 'D', 'E', 'F'};
+    }
+    else 
+    	allowed_chars = {'.'};
+    
     while(text_pos < (text.length()-1))
     {
         next();
         if(!isdigit(curc()))
         {
-            if(curc() == '.')
+        	bool is_ok = false;
+            for(auto c : allowed_chars)
             {
-                if(nc.is_float)
-                    die("Multiple decimal marks found in floating point literal.");
-                nc.is_float = true;
+            	if(curc() == c)
+            	{
+            		is_ok = true;
+            		break;
+            	}
             }
-            else if(curc() == '\'')
+            if((curc() == '\'') || (is_ok))
             {
-                //ignore
+            	//igore ' characters
             }
             else
+            {
                 return nc;
+            }
         }
         nc.val += curc();
     }

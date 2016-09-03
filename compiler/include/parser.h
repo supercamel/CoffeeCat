@@ -5,6 +5,7 @@
 #include "nodes.h"
 #include <functional>
 
+
 //fatal parse error
 struct ParseError
 {
@@ -39,7 +40,7 @@ public:
         Returns true if a variable name is atomic. ie int, float, double etc
     */
     static bool variable_is_atomic(string var);
-    
+
 //private:
     void parse_top_level(NBlock& block);
     void parse_method(shared_ptr<NMethod>& block);
@@ -102,10 +103,10 @@ public:
         parse_binary_expression() handles all binary operators and uses lambda functions for recursion.
     */
     void parse_binary_expression(shared_ptr<NExpression>& e,
-                                    vector<BINARY_OPERATOR> ops,
-                                    vector<TOKEN> toks, int precedence,
-                                    std::function<void (shared_ptr<NExpression>& e)> recurse,
-                                    std::function<void (shared_ptr<NExpression>& e)> subexpr);
+                                 vector<BINARY_OPERATOR> ops,
+                                 vector<TOKEN> toks, int precedence,
+                                 std::function<void (shared_ptr<NExpression>& e)> recurse,
+                                 std::function<void (shared_ptr<NExpression>& e)> subexpr);
     void check_precedence(shared_ptr<NExpression>& e);
 
     Lexer& lexer;

@@ -1,4 +1,4 @@
-CC=g++-4.9
+CC=g++
 CFLAGS=-c -Wall -Wextra -std=c++14 -O3 -I../
 LDFLAGS= -letk
 COFFEECAT=$(wildcard *.cof)

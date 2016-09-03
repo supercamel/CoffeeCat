@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <etk/etk.h>
+//#include <etk/etk.h>
 #include <chrono>
 #include <iomanip>
 
@@ -13,7 +13,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int pos = 1;
     string outpath = "./";
@@ -44,6 +44,11 @@ std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     }
 
     ofstream cofheader(outpath + "coffee_header.h");
+    if(!cofheader.is_open())
+    {
+        cout << "Couldn't open coffee header at : " << outpath + "coffee_header.h" << endl;
+        return -1;
+    }
     cofheader << "#ifndef COFFEE_CAT_PROJECT_HEADER\n#define COFFEE_CAT_PROJECT_HEADER\n\n";
 
     for(auto& f : filenames)

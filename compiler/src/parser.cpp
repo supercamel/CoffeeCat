@@ -376,7 +376,7 @@ void Parser::parse_block_item(NBlock& block)
             lexer.lex();
         auto tok = lexer.lex();
         if(tok.tok != TOK_NEWLINE)
-            throw(ParseError(tok, "Expected newline after expression"));
+            throw(ParseError(tok, "Expected newline after expression, got a " + tok.raw));
         block.items.push_back(e);
         return;
     }
@@ -391,7 +391,7 @@ parsedecl:
         parse_declaration(d);
         auto tok = lexer.lex();
         if(tok.tok != TOK_NEWLINE)
-            throw(ParseError(tok, "Expected newline after declaration"));
+            throw(ParseError(tok, "Expected newline after declaration, got a " + tok.raw));
         block.items.push_back(d);
         return;
     }
@@ -838,7 +838,7 @@ void Parser::parse_exclusive_or_expression(shared_ptr<NExpression>& e)
     Lexer l = lexer;
     try
     {
-        parse_binary_expression(e, {BO_EXCLUSIVE_OR}, {TOK_TILDE}, 5,
+        parse_binary_expression(e, {BO_EXCLUSIVE_OR}, {TOK_CARET}, 5,
                                 [&](shared_ptr<NExpression>& e)
         {
             parse_exclusive_or_expression(e);
@@ -1301,7 +1301,7 @@ void Parser::parse_integer(shared_ptr<NIntegerLiteral>& ni)
 {
     auto tok = lexer.lex(true);
     if(tok.tok == TOK_INT_LITERAL)
-        ni->value = stoi(tok.raw);
+        ni->value = strtol(tok.raw.c_str(), nullptr, 0);
     else
         throw(backtrack());
     lexer.lex();

@@ -185,7 +185,7 @@ public:
     {
         t->Visit(this);
     }
-    
+
     string value;
 };
 
