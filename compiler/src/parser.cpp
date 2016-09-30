@@ -613,7 +613,6 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
     v->type = tok.raw;
     if(tok.tok == TOK_VAR)
         v->type = "auto";
-    cout << "init type: " << v->type << endl;
     tok = lexer.lex();
     if(tok.tok != TOK_IDENTIFIER)
         throw(ParseError(tok, "Expected identifier after type keyword"));
@@ -624,7 +623,6 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
     auto l = lexer;
     try
     {
-    	cout << "tok: " << lexer.lex(true).raw << endl;
         if(lexer.lex(true).tok == TOK_SHARED)
         {
             auto d = make_shared<NExpression>();
@@ -633,7 +631,6 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
             v->type += ((NShared*)&(*d))->type;
             v->type += ">";
             v->initialiser = d;
-            cout << v->type << endl;
             return;
         }
         else
