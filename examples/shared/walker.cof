@@ -1,3 +1,4 @@
+extern_header("#include \"main.h\"")
 
 class Walker:
 	void Visit(out Node n):

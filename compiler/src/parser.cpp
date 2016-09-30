@@ -136,6 +136,8 @@ parsedecl:
             parse_declaration(v);
             if(lexer.lex().tok != TOK_NEWLINE)
                 throw ParseError(lexer.lex(), "Expected new line after variable declaration");
+            cout << "parsing declaration in class " << c->handle << endl;
+            cout << v->type << endl;
             c->vars.push_back(v);
             goto newline;
         }
@@ -611,6 +613,7 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
     v->type = tok.raw;
     if(tok.tok == TOK_VAR)
         v->type = "auto";
+    cout << "init type: " << v->type << endl;
     tok = lexer.lex();
     if(tok.tok != TOK_IDENTIFIER)
         throw(ParseError(tok, "Expected identifier after type keyword"));
@@ -621,14 +624,16 @@ void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
     auto l = lexer;
     try
     {
-        if(lexer.lex(true).raw == "shared")
+    	cout << "tok: " << lexer.lex(true).raw << endl;
+        if(lexer.lex(true).tok == TOK_SHARED)
         {
             auto d = make_shared<NExpression>();
             parse_shared_expression(d);
             v->type = "pool_pointer<";
             v->type += ((NShared*)&(*d))->type;
-            v->type += TOK_LESS_THAN;
+            v->type += ">";
             v->initialiser = d;
+            cout << v->type << endl;
             return;
         }
         else
@@ -1105,7 +1110,7 @@ void Parser::parse_shared_expression(shared_ptr<NExpression>& expr)
             throw(backtrack());
         auto ns = make_shared<NShared>();
         t = lexer.lex();
-        if(t.tok != TOK_GREATER_THAN)
+        if(t.tok != TOK_LESS_THAN)
             throw(ParseError(t, "Expected '<' after shared"));
         auto id = lexer.lex();
         if(id.tok != TOK_IDENTIFIER)
@@ -1119,7 +1124,7 @@ void Parser::parse_shared_expression(shared_ptr<NExpression>& expr)
             throw(ParseError(t, "Expected identifier as second parameter to 'shared'"));
         ns->pool_ident = t.raw;
         t = lexer.lex();
-        if(t.tok != TOK_LESS_THAN)
+        if(t.tok != TOK_GREATER_THAN)
             throw(ParseError(t, "Expected '>' after shared"));
         ns->args = make_shared<NExpressionList>();
         parse_expression_list(ns->args);
