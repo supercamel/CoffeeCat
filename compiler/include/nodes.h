@@ -59,6 +59,17 @@ public:
     std::string file;
 };
 
+class NInclude : public Node
+{
+public:
+	std::string path;
+	virtual void Accept(TreeWalker* t)
+	{
+		t->Visit(this);
+	}
+};
+
+
 class NBlock : public Node
 {
 public:

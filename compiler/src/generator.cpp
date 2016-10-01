@@ -55,6 +55,11 @@ void Generator::Visit(NBlock* block)
     }
 }
 
+void Generator::Visit(NInclude* i)
+{
+	header += "#include \"" + i->path + ".h\"\n";
+}
+
 void Generator::Visit(NBinaryOperator* bo)
 {
     auto it = bo->subexpr.begin();
@@ -301,6 +306,7 @@ void Generator::Visit(NEnum* e)
     in_class.push_back(e->handle);
 
     auto h = header;
+    /*
     generate_decl = true;
 
     for(auto m : e->methods)
@@ -310,11 +316,8 @@ void Generator::Visit(NEnum* e)
     }
 
     generate_decl = false;
+    */
     header = h;
-
-    header += source;
-    source = "";
-    source = s;
 
     for(auto m : e->methods)
         m->Accept(this);
@@ -331,7 +334,10 @@ void Generator::Visit(NEnum* e)
         header += ";\n";
     }
 
-
+	header += source;
+    source = "";
+    source = s;
+    
     header += "};\n";
 }
 
@@ -352,6 +358,7 @@ void Generator::Visit(NClass* c)
         cl->Accept(this);
 
     auto h = header;
+    /*
     generate_decl = true;
 
     for(auto m : c->methods)
@@ -361,7 +368,7 @@ void Generator::Visit(NClass* c)
     }
 
     generate_decl = false;
-
+*/
     generate_auto = false;
     for(auto v : c->vars)
     {
@@ -373,15 +380,14 @@ void Generator::Visit(NClass* c)
 
     header = h;
 
-
-    header += source;
-    source = "";
-    source = s;
-
     for(auto m : c->methods)
         m->Accept(this);
 
     in_class.pop_back();
+    
+    header += source;
+    source = "";
+    source = s;
 
     header += "};\n";
 }
@@ -427,8 +433,10 @@ void Generator::Visit(NMethod* m)
         else
             dec = m->return_type;
         dec += " ";
+        /*
         for(auto& s : in_class)
             dec += s + "::";
+        */
         dec += m->foo_name;
 
         if(!in_class.size())

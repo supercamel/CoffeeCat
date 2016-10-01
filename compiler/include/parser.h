@@ -49,6 +49,8 @@ public:
 
     void parse_block(NBlock& block);
     void parse_block_item(NBlock& block);
+    
+    void parse_include(shared_ptr<NInclude>& i);
 
     void parse_if_else_statement(shared_ptr<NIfElse>& ie);
     void parse_return_statement(shared_ptr<NReturn>& ie);

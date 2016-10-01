@@ -53,6 +53,7 @@ public:
     void generate(NBlock* block, string fname);
 
     void Visit(NBlock* block);
+    void Visit(NInclude* i);
     void Visit(NBinaryOperator* bo);
     void Visit(NIntegerLiteral* i);
     void Visit(NCharLiteral* c);

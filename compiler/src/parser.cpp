@@ -29,6 +29,17 @@ void Parser::parse_top_level(NBlock& block)
     parse_indent(0);
     try
     {
+    	auto i = make_shared<NInclude>();
+    	parse_include(i);
+    	block.items.push_back(i);
+    	return;
+    }
+    catch(backtrack bte)
+    {
+    	lexer = l;
+    }
+    try
+    {
         auto n = make_shared<NMethod>();
         parse_method(n);
         block.items.push_back(n);
@@ -136,8 +147,6 @@ parsedecl:
             parse_declaration(v);
             if(lexer.lex().tok != TOK_NEWLINE)
                 throw ParseError(lexer.lex(), "Expected new line after variable declaration");
-            cout << "parsing declaration in class " << c->handle << endl;
-            cout << v->type << endl;
             c->vars.push_back(v);
             goto newline;
         }
@@ -471,6 +480,17 @@ parsedecl:
         lexer = l;
     }
     throw ParseError(lexer.lex(true), "Did not expect " + lexer.lex(true).raw);
+}
+
+void Parser::parse_include(shared_ptr<NInclude>& i)
+{
+	if(lexer.lex(true).tok != TOK_INCLUDE)
+		throw(backtrack());
+	lexer.lex();
+	if(lexer.lex(true).tok != TOK_STRING_LITERAL)
+		throw(ParseError(lexer.lex(), "Expected string literal after include statement"));
+	
+	i->path = lexer.lex().raw;
 }
 
 void Parser::parse_if_else_statement(shared_ptr<NIfElse>& ie)

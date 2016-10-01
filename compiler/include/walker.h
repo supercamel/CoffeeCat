@@ -98,6 +98,9 @@ public:
     virtual void Visit(class NEnum* e) {
         unused(e);
     }
+    virtual void Visit(class NInclude* i) {
+    	unused(i);
+    }
 };
 
 

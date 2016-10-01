@@ -331,6 +331,8 @@ Token Lexer::get_token()
                 return Token(TOK_CLASS, line, col);
             else if(i == "pass")
                 return Token(TOK_PASS, line, col);
+            else if(i == "include")
+            	return Token(TOK_INCLUDE, line, col);
             else
                 return Token(TOK_IDENTIFIER, i, line, col);
         }
