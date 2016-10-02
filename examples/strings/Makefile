@@ -9,7 +9,7 @@ EXECUTABLE=main
 all: $(COFFEECAT) $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@ -lc
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@ 
 
 %.o:%.cpp
 	$(CC) $(CFLAGS) $< -o $@

@@ -1,0 +1,40 @@
+<h1>CoffeeCat Tutorial</h1>
+<h2>Index</h2>
+<ul>
+    <li><a href="#hello_world">Hello World</a></li>
+    <li><a href="#control">Flow Control</a></li>
+</ul>
+
+<h2><a name="hello_world">Hello World</a></h2>
+<p>Here's the mandatory hello world example</p>
+<pre style='color:#000000;background:#ffffff;'><span style='color:#800000; font-weight:bold; '>int</span> main<span style='color:#808030; '>(</span><span style='color:#808030; '>)</span><span style='color:#808030; '>:</span>
+    print<span style='color:#808030; '>(</span><span style='color:#800000; '>"</span><span style='color:#0000e6; '>Hello world!\n</span><span style='color:#800000; '>"</span><span style='color:#808030; '>)</span>
+</pre>
+<p>This is just one function call main and all it does is print out a famous message.
+    CoffeeCat uses indentation to specify blocks of code. Indents can be either 4 spaces or a tab; the compiler identifies both of these as an indent.
+<p>The CoffeeCat compiler (let's call it ccat from here on) turns this source into C++. To compile,
+    open a terminal and use
+    <pre>ccat -o ./ hello.cof</pre>
+<p>If all goes well, you will see the files hello.cpp, hello.h and coffee_header.h appear.
+<p>To compile the C++ files, a couple of dependancies are required. The first is ETK, which can be cloned from github
+    <pre>
+git clone http://github.com/supercamel/EmbeddedToolKit
+cd EmbeddedToolKit
+make && make install</pre>
+<p>The second dependancy is a small 'standard' library which CoffeeCat needs to print on to the terminal.
+    This can be copied from the examples directory (<a href="https://github.com/supercamel/CoffeeCat/tree/master/examples/stdlib">link</a>)
+    and it should be placed in the same folder as your hello.cof file.
+<p>To compile, use <pre>g++ -std=c++14 hello.cpp stdlib/print.cpp -letk -o hello</pre>
+
+<h2><a name="control">Flow Control</a></h2>
+<p>CoffeeCat has only four control statements. These are
+<ul>
+    <li>if</li>
+    <li>else if</li>
+    <li>while</li>
+    <li>for</li>
+</ul>
+<p>It also has break and continue statements that can be used inside while and for loops.
+<p>If statements are used to check for true conditions.
+<pre>if(a == 5):
+    print("a is equal to five")</pre>
