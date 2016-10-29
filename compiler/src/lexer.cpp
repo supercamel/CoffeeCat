@@ -333,6 +333,8 @@ Token Lexer::get_token()
                 return Token(TOK_PASS, line, col);
             else if(i == "include")
             	return Token(TOK_INCLUDE, line, col);
+            else if(i == "volatile")
+            	return Token(TOK_VOLATILE, line, col);
             else
                 return Token(TOK_IDENTIFIER, i, line, col);
         }

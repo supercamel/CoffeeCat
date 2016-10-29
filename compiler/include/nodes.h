@@ -365,6 +365,7 @@ public:
 
     bool global = false;
     bool is_auto = false;
+    bool is_volatile = false;
     string type;
     string handle;
 

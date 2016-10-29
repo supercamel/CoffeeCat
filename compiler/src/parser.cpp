@@ -626,6 +626,12 @@ void Parser::parse_control_statement(shared_ptr<NControl>& c)
 void Parser::parse_declaration(shared_ptr<NVariableDeclaration>& v)
 {
     auto tok = lexer.lex();
+    if(tok.tok == TOK_VOLATILE)
+    {
+    	v->is_volatile = true;
+    	tok = lexer.lex();
+    }
+    
     if((tok.tok != TOK_IDENTIFIER) && (tok.tok != TOK_VAR))
         throw(backtrack());
     if((!variable_is_atomic(tok.raw)) && (tok.tok != TOK_VAR))

@@ -464,6 +464,7 @@ void Generator::Visit(NVariableDeclaration* v)
     if(v->global)
     {
         header += "extern ";
+        
         header += v->type + " ";
         header += v->handle + ";\n";
 
@@ -471,6 +472,8 @@ void Generator::Visit(NVariableDeclaration* v)
     }
     else
     {
+    	if(v->is_volatile)
+    		source += "voltile ";
         string type = v->type;
         if(generate_auto)
         {
